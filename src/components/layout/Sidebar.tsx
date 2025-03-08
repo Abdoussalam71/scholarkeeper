@@ -54,7 +54,7 @@ export default function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild
-                    active={location.pathname === item.url}
+                    className={location.pathname === item.url ? "bg-accent text-accent-foreground" : ""}
                   >
                     <Link to={item.url} className="flex items-center gap-3 px-3 py-2">
                       <item.icon className="h-5 w-5" />
