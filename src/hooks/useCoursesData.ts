@@ -11,19 +11,23 @@ export const useCoursesData = (initialSearchTerm: string = '') => {
   
   // Initialiser la base de données au démarrage
   useEffect(() => {
-    try {
-      // Initialiser la base de données
-      courseService.initDatabase();
-      loadCourses();
-    } catch (error) {
-      console.error('Erreur lors de l\'initialisation de la base de données:', error);
-      toast({
-        title: "Erreur de base de données",
-        description: "Impossible de charger la base de données",
-        variant: "destructive"
-      });
-      setIsLoading(false);
-    }
+    const initDb = async () => {
+      try {
+        // Initialiser la base de données
+        await courseService.initDatabase();
+        loadCourses();
+      } catch (error) {
+        console.error('Erreur lors de l\'initialisation de la base de données:', error);
+        toast({
+          title: "Erreur de base de données",
+          description: "Impossible de charger la base de données",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+      }
+    };
+    
+    initDb();
   }, []);
   
   // Charger les cours en fonction du terme de recherche
@@ -31,14 +35,14 @@ export const useCoursesData = (initialSearchTerm: string = '') => {
     loadCourses();
   }, [searchTerm]);
   
-  const loadCourses = () => {
+  const loadCourses = async () => {
     setIsLoading(true);
     try {
       let loadedCourses;
       if (searchTerm) {
-        loadedCourses = courseService.searchCourses(searchTerm);
+        loadedCourses = await courseService.searchCourses(searchTerm);
       } else {
-        loadedCourses = courseService.getAllCourses();
+        loadedCourses = await courseService.getAllCourses();
       }
       setCourses(loadedCourses);
     } catch (error) {
@@ -53,9 +57,9 @@ export const useCoursesData = (initialSearchTerm: string = '') => {
     }
   };
   
-  const addCourse = (course: Omit<CourseData, 'id'>) => {
+  const addCourse = async (course: Omit<CourseData, 'id'>) => {
     try {
-      const newCourse = courseService.addCourse(course);
+      const newCourse = await courseService.addCourse(course);
       setCourses(prevCourses => [...prevCourses, newCourse]);
       toast({
         title: "Succès",
@@ -73,9 +77,9 @@ export const useCoursesData = (initialSearchTerm: string = '') => {
     }
   };
   
-  const updateCourse = (course: CourseData) => {
+  const updateCourse = async (course: CourseData) => {
     try {
-      const updatedCourse = courseService.updateCourse(course);
+      const updatedCourse = await courseService.updateCourse(course);
       setCourses(prevCourses => 
         prevCourses.map(c => c.id === course.id ? updatedCourse : c)
       );
@@ -95,9 +99,9 @@ export const useCoursesData = (initialSearchTerm: string = '') => {
     }
   };
   
-  const deleteCourse = (id: string) => {
+  const deleteCourse = async (id: string) => {
     try {
-      const success = courseService.deleteCourse(id);
+      const success = await courseService.deleteCourse(id);
       if (success) {
         setCourses(prevCourses => prevCourses.filter(c => c.id !== id));
         toast({

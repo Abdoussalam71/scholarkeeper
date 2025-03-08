@@ -1,10 +1,12 @@
 
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Pencil, Eye, Trash2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCoursesData } from "@/hooks/useCoursesData";
+import { useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 export function CoursesList() {
   const { 
@@ -12,12 +14,26 @@ export function CoursesList() {
     isLoading, 
     searchTerm, 
     setSearchTerm,
-    // Autres fonctions disponibles:
-    // addCourse, 
-    // updateCourse, 
-    // deleteCourse,
-    // refreshCourses
+    deleteCourse,
+    refreshCourses
   } = useCoursesData();
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteCourse(id);
+      toast({
+        title: "Cours supprimé",
+        description: "Le cours a été supprimé avec succès",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <Card>
@@ -34,7 +50,10 @@ export function CoursesList() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button>Ajouter un cours</Button>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Ajouter un cours
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -77,8 +96,27 @@ export function CoursesList() {
                     <TableCell>{course.currentStudents}/{course.maxStudents}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">Détails</Button>
-                        <Button variant="outline" size="sm">Éditer</Button>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Détails
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Éditer
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleDelete(course.id)}
+                          disabled={deletingId === course.id}
+                        >
+                          {deletingId === course.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 mr-1" />
+                          )}
+                          Supprimer
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
