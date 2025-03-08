@@ -4,6 +4,7 @@ import AppSidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, GraduationCap, BookOpen, CreditCard } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const stats = [
   {
@@ -11,24 +12,28 @@ const stats = [
     value: "234",
     icon: Users,
     description: "12 nouveaux ce mois",
+    url: "/students"
   },
   {
     title: "Enseignants",
     value: "15",
     icon: GraduationCap,
     description: "2 en congé",
+    url: "/teachers"
   },
   {
     title: "Cours Actifs",
     value: "28",
     icon: BookOpen,
     description: "4 en cours",
+    url: "/courses"
   },
   {
     title: "Paiements en attente",
     value: "8",
     icon: CreditCard,
     description: "3 en retard",
+    url: "/payments"
   },
 ];
 
@@ -47,20 +52,22 @@ const Dashboard = () => {
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {stats.map((stat) => (
-                <Card key={stat.title} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {stat.title}
-                    </CardTitle>
-                    <stat.icon className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {stat.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                <Link key={stat.title} to={stat.url}>
+                  <Card className="hover:shadow-md transition-shadow h-full">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        {stat.title}
+                      </CardTitle>
+                      <stat.icon className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{stat.value}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {stat.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
 
@@ -71,7 +78,7 @@ const Dashboard = () => {
                   <CardDescription>Dernières actions effectuées</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Contenu à venir */}
+                  <p className="text-sm text-muted-foreground">En construction...</p>
                 </CardContent>
               </Card>
 
@@ -81,7 +88,7 @@ const Dashboard = () => {
                   <CardDescription>Planning des cours d'aujourd'hui</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Contenu à venir */}
+                  <p className="text-sm text-muted-foreground">En construction...</p>
                 </CardContent>
               </Card>
 
@@ -91,7 +98,7 @@ const Dashboard = () => {
                   <CardDescription>Messages importants</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Contenu à venir */}
+                  <p className="text-sm text-muted-foreground">En construction...</p>
                 </CardContent>
               </Card>
             </div>

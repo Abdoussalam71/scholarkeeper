@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Users, GraduationCap, Calendar, BookOpen, CreditCard } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const items = [
   {
@@ -40,6 +41,8 @@ const items = [
 ];
 
 export default function AppSidebar() {
+  const location = useLocation();
+  
   return (
     <Sidebar>
       <SidebarContent>
@@ -49,11 +52,14 @@ export default function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-3 px-3 py-2">
+                  <SidebarMenuButton 
+                    asChild
+                    active={location.pathname === item.url}
+                  >
+                    <Link to={item.url} className="flex items-center gap-3 px-3 py-2">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
