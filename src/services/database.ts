@@ -1,18 +1,21 @@
-
 import Dexie from 'dexie';
 import { CourseData } from '@/types/courses';
+import { ScheduleEvent } from '@/types/schedule';
 
 class AppDatabase extends Dexie {
   courses: Dexie.Table<CourseData, string>;
+  schedules: Dexie.Table<ScheduleEvent, string>;
 
   constructor() {
     super('coursesAppDB');
     
-    this.version(1).stores({
-      courses: 'id, name, teacherId, teacherName'
+    this.version(2).stores({
+      courses: 'id, name, teacherId, teacherName',
+      schedules: 'id, courseId, startTime, endTime, dayOfWeek'
     });
     
     this.courses = this.table('courses');
+    this.schedules = this.table('schedules');
   }
 }
 
@@ -121,6 +124,50 @@ export const courseService = {
   
   deleteCourse: async (id: string): Promise<boolean> => {
     await db.courses.delete(id);
+    return true;
+  }
+};
+
+// Service pour gérer les horaires
+export const scheduleService = {
+  initSchedules: async () => {
+    const count = await db.schedules.count();
+    
+    if (count === 0) {
+      const courses = await db.courses.toArray();
+      const sampleSchedules = courses.map(course => ({
+        id: Math.random().toString(36).substring(2, 9),
+        courseId: course.id,
+        courseName: course.name,
+        teacherName: course.teacherName,
+        startTime: course.schedule.split(' - ')[0],
+        endTime: course.schedule.split(' - ')[1],
+        dayOfWeek: course.schedule.split(' ')[0],
+        room: `Salle ${Math.floor(Math.random() * 100) + 1}`
+      }));
+      
+      await db.schedules.bulkAdd(sampleSchedules);
+    }
+  },
+  
+  getAllSchedules: async (): Promise<ScheduleEvent[]> => {
+    return await db.schedules.toArray();
+  },
+  
+  addSchedule: async (schedule: Omit<ScheduleEvent, 'id'>): Promise<ScheduleEvent> => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const newSchedule = { id, ...schedule };
+    await db.schedules.add(newSchedule);
+    return newSchedule;
+  },
+  
+  updateSchedule: async (schedule: ScheduleEvent): Promise<ScheduleEvent> => {
+    await db.schedules.update(schedule.id, schedule);
+    return schedule;
+  },
+  
+  deleteSchedule: async (id: string): Promise<boolean> => {
+    await db.schedules.delete(id);
     return true;
   }
 };
