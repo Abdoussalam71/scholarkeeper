@@ -1,43 +1,188 @@
 
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, GraduationCap, BookOpen, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const stats = [
-  {
-    title: "Étudiants Total",
-    value: "234",
-    icon: Users,
-    description: "12 nouveaux ce mois",
-    url: "/students"
-  },
-  {
-    title: "Enseignants",
-    value: "15",
-    icon: GraduationCap,
-    description: "2 en congé",
-    url: "/teachers"
-  },
-  {
-    title: "Cours Actifs",
-    value: "28",
-    icon: BookOpen,
-    description: "4 en cours",
-    url: "/courses"
-  },
-  {
-    title: "Paiements en attente",
-    value: "8",
-    icon: CreditCard,
-    description: "3 en retard",
-    url: "/payments"
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { studentService, teacherService, courseService } from "@/services/database";
 
 const Dashboard = () => {
+  const [stats, setStats] = useState([
+    {
+      title: "Étudiants Total",
+      value: "0",
+      icon: Users,
+      description: "Chargement...",
+      url: "/students"
+    },
+    {
+      title: "Enseignants",
+      value: "0",
+      icon: GraduationCap,
+      description: "Chargement...",
+      url: "/teachers"
+    },
+    {
+      title: "Cours Actifs",
+      value: "0",
+      icon: BookOpen,
+      description: "Chargement...",
+      url: "/courses"
+    },
+    {
+      title: "Classes",
+      value: "0",
+      icon: CreditCard,
+      description: "Par niveaux",
+      url: "/classes"
+    },
+  ]);
+
+  // Initialize database
+  const { isLoading: isLoadingStudents } = useQuery({
+    queryKey: ["studentsInit"],
+    queryFn: async () => {
+      await studentService.initDatabase();
+      return true;
+    },
+    staleTime: Infinity
+  });
+
+  const { isLoading: isLoadingTeachers } = useQuery({
+    queryKey: ["teachersInit"],
+    queryFn: async () => {
+      await teacherService.initDatabase();
+      return true;
+    },
+    staleTime: Infinity
+  });
+
+  const { isLoading: isLoadingCourses } = useQuery({
+    queryKey: ["coursesInit"],
+    queryFn: async () => await courseService.initDatabase(),
+    staleTime: Infinity
+  });
+
+  // Fetch counts
+  const { data: studentsCount = 0 } = useQuery({
+    queryKey: ["studentsCount"],
+    queryFn: async () => {
+      const students = await studentService.getAllStudents();
+      return students.length;
+    },
+    enabled: !isLoadingStudents
+  });
+
+  const { data: teachersCount = 0 } = useQuery({
+    queryKey: ["teachersCount"],
+    queryFn: async () => {
+      const teachers = await teacherService.getAllTeachers();
+      return teachers.length;
+    },
+    enabled: !isLoadingTeachers
+  });
+
+  const { data: coursesCount = 0 } = useQuery({
+    queryKey: ["coursesCount"],
+    queryFn: async () => {
+      const courses = await courseService.getAllCourses();
+      return courses.length;
+    },
+    enabled: !isLoadingCourses
+  });
+
+  const { data: classesData } = useQuery({
+    queryKey: ["classesByLevel"],
+    queryFn: async () => {
+      const { classService } = await import('@/services/database');
+      const classes = await classService.getAllClasses();
+      
+      // Count classes by level
+      const countByLevel = classes.reduce((acc, cls) => {
+        acc[cls.level] = (acc[cls.level] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      return {
+        total: classes.length,
+        byLevel: countByLevel
+      };
+    }
+  });
+
+  // Update stats when data is loaded
+  useEffect(() => {
+    if (studentsCount !== undefined) {
+      setStats(prev => 
+        prev.map(stat => 
+          stat.title === "Étudiants Total" 
+            ? { 
+                ...stat, 
+                value: studentsCount.toString(),
+                description: `${studentsCount} élèves enregistrés`
+              } 
+            : stat
+        )
+      );
+    }
+  }, [studentsCount]);
+
+  useEffect(() => {
+    if (teachersCount !== undefined) {
+      setStats(prev => 
+        prev.map(stat => 
+          stat.title === "Enseignants" 
+            ? { 
+                ...stat, 
+                value: teachersCount.toString(),
+                description: `${teachersCount} professeurs actifs`
+              } 
+            : stat
+        )
+      );
+    }
+  }, [teachersCount]);
+
+  useEffect(() => {
+    if (coursesCount !== undefined) {
+      setStats(prev => 
+        prev.map(stat => 
+          stat.title === "Cours Actifs" 
+            ? { 
+                ...stat, 
+                value: coursesCount.toString(),
+                description: `${coursesCount} cours programmés`
+              } 
+            : stat
+        )
+      );
+    }
+  }, [coursesCount]);
+
+  useEffect(() => {
+    if (classesData) {
+      const { total, byLevel } = classesData;
+      const levelDescription = Object.entries(byLevel)
+        .map(([level, count]) => `${count} ${level}`)
+        .join(', ');
+      
+      setStats(prev => 
+        prev.map(stat => 
+          stat.title === "Classes" 
+            ? { 
+                ...stat, 
+                value: total.toString(),
+                description: levelDescription || "Par niveaux"
+              } 
+            : stat
+        )
+      );
+    }
+  }, [classesData]);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">

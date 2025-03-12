@@ -67,7 +67,15 @@ export const ClassDialog = ({
   }, [open, classData, form]);
   
   const onSubmit = (data: z.infer<typeof classSchema>) => {
-    onSave(data);
+    // Make sure all required fields are present for Omit<ClassData, "id">
+    const classToSave = {
+      name: data.name,
+      level: data.level,
+      description: data.description,
+      students: data.students || [] // Ensure students array is never undefined
+    };
+    
+    onSave(classToSave);
     onOpenChange(false);
   };
   

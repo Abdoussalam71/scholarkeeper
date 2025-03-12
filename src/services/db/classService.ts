@@ -59,7 +59,13 @@ export const classService = {
   },
   
   updateClass: async (classData: ClassData): Promise<ClassData> => {
-    await db.classes.update(classData.id, classData);
+    // Fix: Use correct update method with id and changes separately
+    await db.classes.update(classData.id, {
+      name: classData.name,
+      level: classData.level,
+      description: classData.description,
+      students: classData.students
+    });
     return classData;
   },
   
