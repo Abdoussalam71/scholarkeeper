@@ -17,6 +17,16 @@ export function useStudentsData(searchQuery: string = "") {
     staleTime: Infinity
   });
   
+  // Get available classes for student assignment
+  const { data: availableClasses = [] } = useQuery({
+    queryKey: ["classes"],
+    queryFn: async () => {
+      const { classService } = await import('@/services/database');
+      const classes = await classService.getAllClasses();
+      return classes.map(c => c.name);
+    }
+  });
+  
   // Get students data
   const { data: students = [], isLoading, error } = useQuery({
     queryKey: ["students", searchQuery],
@@ -35,6 +45,7 @@ export function useStudentsData(searchQuery: string = "") {
     onSuccess: () => {
       toast.success("Étudiant ajouté avec succès");
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
     },
     onError: () => {
       toast.error("Erreur lors de l'ajout de l'étudiant");
@@ -48,6 +59,7 @@ export function useStudentsData(searchQuery: string = "") {
     onSuccess: () => {
       toast.success("Étudiant mis à jour avec succès");
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
     },
     onError: () => {
       toast.error("Erreur lors de la mise à jour de l'étudiant");
@@ -61,6 +73,7 @@ export function useStudentsData(searchQuery: string = "") {
     onSuccess: () => {
       toast.success("Étudiant supprimé avec succès");
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
     },
     onError: () => {
       toast.error("Erreur lors de la suppression de l'étudiant");
@@ -69,6 +82,7 @@ export function useStudentsData(searchQuery: string = "") {
   
   return {
     students,
+    availableClasses,
     isLoading,
     error,
     addStudent: (student: Omit<StudentData, "id">) => addStudentMutation.mutate(student),
