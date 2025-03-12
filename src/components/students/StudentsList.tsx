@@ -13,9 +13,11 @@ import { StudentData } from "@/types/students";
 
 interface StudentsListProps {
   students: StudentData[];
+  onEdit: (student: StudentData) => void;
+  onDelete: (studentId: string) => void;
 }
 
-export const StudentsList = ({ students }: StudentsListProps) => {
+export const StudentsList = ({ students, onEdit, onDelete }: StudentsListProps) => {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -56,10 +58,20 @@ export const StudentsList = ({ students }: StudentsListProps) => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      title="Modifier"
+                      onClick={() => onEdit(student)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      title="Supprimer"
+                      onClick={() => onDelete(student.id)}
+                    >
                       <Trash className="h-4 w-4" />
                     </Button>
                   </div>

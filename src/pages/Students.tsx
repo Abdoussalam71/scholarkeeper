@@ -4,28 +4,51 @@ import AppSidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Edit, Trash } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { useState } from "react";
 import { StudentsList } from "@/components/students/StudentsList";
+import { StudentDialog } from "@/components/students/StudentDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useStudentsData } from "@/hooks/useStudentsData";
 import { StudentData } from "@/types/students";
 
-// Sample student data for now, later to be replaced with API calls
-const initialStudents: StudentData[] = [
-  { id: "1", name: "Antoine Dupont", age: 16, class: "Seconde B", email: "antoine@example.com", attendance: 92 },
-  { id: "2", name: "Emma Martin", age: 17, class: "Première A", email: "emma@example.com", attendance: 88 },
-  { id: "3", name: "Lucas Bernard", age: 15, class: "Troisième C", email: "lucas@example.com", attendance: 95 },
-  { id: "4", name: "Léa Petit", age: 18, class: "Terminale S", email: "lea@example.com", attendance: 98 },
-  { id: "5", name: "Thomas Dubois", age: 16, class: "Seconde A", email: "thomas@example.com", attendance: 85 },
-];
-
 const StudentsPage = () => {
-  const [students, setStudents] = useState<StudentData[]>(initialStudents);
   const [searchQuery, setSearchQuery] = useState("");
+  const { students, isLoading, addStudent, updateStudent, deleteStudent } = useStudentsData(searchQuery);
+  
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
-  const filteredStudents = students.filter(student => 
-    student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    student.class.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleAddStudent = (student: Omit<StudentData, "id">) => {
+    addStudent(student);
+  };
+
+  const handleEditStudent = (student: StudentData) => {
+    setSelectedStudent(student);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateStudent = (student: Omit<StudentData, "id">) => {
+    if (selectedStudent) {
+      updateStudent(selectedStudent.id, student);
+    }
+  };
+
+  const handleDeleteDialogOpen = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      setSelectedStudent(student);
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleDeleteStudent = () => {
+    if (selectedStudent) {
+      deleteStudent(selectedStudent.id);
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -39,7 +62,10 @@ const StudentsPage = () => {
                 <h1 className="text-3xl font-bold tracking-tight">Étudiants</h1>
                 <p className="text-muted-foreground">Gérez tous vos étudiants</p>
               </div>
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => setAddDialogOpen(true)}
+              >
                 <Plus className="h-4 w-4" /> 
                 Ajouter un étudiant
               </Button>
@@ -59,10 +85,45 @@ const StudentsPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <StudentsList students={filteredStudents} />
+                {isLoading ? (
+                  <div className="text-center py-4">Chargement...</div>
+                ) : (
+                  <StudentsList 
+                    students={students} 
+                    onEdit={handleEditStudent}
+                    onDelete={handleDeleteDialogOpen}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Dialogs */}
+          <StudentDialog
+            open={addDialogOpen}
+            onOpenChange={setAddDialogOpen}
+            onSave={handleAddStudent}
+            title="Ajouter un étudiant"
+          />
+
+          {selectedStudent && (
+            <StudentDialog
+              open={editDialogOpen}
+              onOpenChange={setEditDialogOpen}
+              student={selectedStudent}
+              onSave={handleUpdateStudent}
+              title="Modifier l'étudiant"
+            />
+          )}
+
+          <ConfirmDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            onConfirm={handleDeleteStudent}
+            title="Supprimer l'étudiant"
+            description={`Êtes-vous sûr de vouloir supprimer l'étudiant "${selectedStudent?.name}" ? Cette action est irréversible.`}
+            confirmLabel="Supprimer"
+          />
         </main>
       </div>
     </SidebarProvider>

@@ -7,25 +7,54 @@ import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
 import { useState } from "react";
 import { TeachersList } from "@/components/teachers/TeachersList";
+import { TeacherDialog } from "@/components/teachers/TeacherDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useTeachersData } from "@/hooks/useTeachersData";
 import { TeacherData } from "@/types/teachers";
-
-// Données d'exemple des enseignants
-const initialTeachers: TeacherData[] = [
-  { id: "1", name: "Marie Dubois", subject: "Mathématiques", email: "marie.dubois@example.com", phone: "06 12 34 56 78", availability: "Lundi, Mardi, Jeudi", hireDate: "01/09/2019" },
-  { id: "2", name: "Pierre Martin", subject: "Physique-Chimie", email: "pierre.martin@example.com", phone: "06 23 45 67 89", availability: "Mardi, Mercredi, Vendredi", hireDate: "15/09/2020" },
-  { id: "3", name: "Sophie Laurent", subject: "Français", email: "sophie.laurent@example.com", phone: "06 34 56 78 90", availability: "Lundi, Jeudi, Vendredi", hireDate: "01/09/2018" },
-  { id: "4", name: "Jean Lefebvre", subject: "Histoire-Géographie", email: "jean.lefebvre@example.com", phone: "06 45 67 89 01", availability: "Mercredi, Jeudi, Vendredi", hireDate: "01/09/2021" },
-  { id: "5", name: "Camille Bernard", subject: "Anglais", email: "camille.bernard@example.com", phone: "06 56 78 90 12", availability: "Lundi, Mardi, Mercredi", hireDate: "01/09/2017" },
-];
+import { useNavigate } from "react-router-dom";
 
 const TeachersPage = () => {
-  const [teachers, setTeachers] = useState<TeacherData[]>(initialTeachers);
   const [searchQuery, setSearchQuery] = useState("");
+  const { teachers, isLoading, addTeacher, updateTeacher, deleteTeacher } = useTeachersData(searchQuery);
+  const navigate = useNavigate();
+  
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<TeacherData | null>(null);
 
-  const filteredTeachers = teachers.filter(teacher => 
-    teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    teacher.subject.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleAddTeacher = (teacher: Omit<TeacherData, "id">) => {
+    addTeacher(teacher);
+  };
+
+  const handleEditTeacher = (teacher: TeacherData) => {
+    setSelectedTeacher(teacher);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateTeacher = (teacher: Omit<TeacherData, "id">) => {
+    if (selectedTeacher) {
+      updateTeacher(selectedTeacher.id, teacher);
+    }
+  };
+
+  const handleDeleteDialogOpen = (teacherId: string) => {
+    const teacher = teachers.find(t => t.id === teacherId);
+    if (teacher) {
+      setSelectedTeacher(teacher);
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleDeleteTeacher = () => {
+    if (selectedTeacher) {
+      deleteTeacher(selectedTeacher.id);
+    }
+  };
+
+  const handleViewSchedule = (teacherId: string) => {
+    navigate(`/schedule?teacherId=${teacherId}`);
+  };
 
   return (
     <SidebarProvider>
@@ -39,7 +68,10 @@ const TeachersPage = () => {
                 <h1 className="text-3xl font-bold tracking-tight">Enseignants</h1>
                 <p className="text-muted-foreground">Gérez l'équipe enseignante</p>
               </div>
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => setAddDialogOpen(true)}
+              >
                 <Plus className="h-4 w-4" /> 
                 Ajouter un enseignant
               </Button>
@@ -59,10 +91,46 @@ const TeachersPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <TeachersList teachers={filteredTeachers} />
+                {isLoading ? (
+                  <div className="text-center py-4">Chargement...</div>
+                ) : (
+                  <TeachersList 
+                    teachers={teachers} 
+                    onEdit={handleEditTeacher}
+                    onDelete={handleDeleteDialogOpen}
+                    onViewSchedule={handleViewSchedule}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Dialogs */}
+          <TeacherDialog
+            open={addDialogOpen}
+            onOpenChange={setAddDialogOpen}
+            onSave={handleAddTeacher}
+            title="Ajouter un enseignant"
+          />
+
+          {selectedTeacher && (
+            <TeacherDialog
+              open={editDialogOpen}
+              onOpenChange={setEditDialogOpen}
+              teacher={selectedTeacher}
+              onSave={handleUpdateTeacher}
+              title="Modifier l'enseignant"
+            />
+          )}
+
+          <ConfirmDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            onConfirm={handleDeleteTeacher}
+            title="Supprimer l'enseignant"
+            description={`Êtes-vous sûr de vouloir supprimer l'enseignant "${selectedTeacher?.name}" ? Cette action est irréversible.`}
+            confirmLabel="Supprimer"
+          />
         </main>
       </div>
     </SidebarProvider>

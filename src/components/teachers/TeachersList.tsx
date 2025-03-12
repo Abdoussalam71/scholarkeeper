@@ -13,9 +13,12 @@ import { TeacherData } from "@/types/teachers";
 
 interface TeachersListProps {
   teachers: TeacherData[];
+  onEdit: (teacher: TeacherData) => void;
+  onDelete: (teacherId: string) => void;
+  onViewSchedule?: (teacherId: string) => void;
 }
 
-export const TeachersList = ({ teachers }: TeachersListProps) => {
+export const TeachersList = ({ teachers, onEdit, onDelete, onViewSchedule }: TeachersListProps) => {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -48,13 +51,30 @@ export const TeachersList = ({ teachers }: TeachersListProps) => {
                 <TableCell>{teacher.hireDate}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" title="Voir l'emploi du temps">
-                      <Calendar className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Modifier">
+                    {onViewSchedule && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="Voir l'emploi du temps"
+                        onClick={() => onViewSchedule(teacher.id)}
+                      >
+                        <Calendar className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      title="Modifier"
+                      onClick={() => onEdit(teacher)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" title="Supprimer">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      title="Supprimer"
+                      onClick={() => onDelete(teacher.id)}
+                    >
                       <Trash className="h-4 w-4" />
                     </Button>
                   </div>
