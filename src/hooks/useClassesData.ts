@@ -41,8 +41,14 @@ export function useClassesData(searchQuery: string = "", level?: StudyLevel) {
   
   // Add a new class
   const addClassMutation = useMutation({
-    mutationFn: (newClass: Omit<ClassData, "id">) => 
-      classService.addClass(newClass),
+    mutationFn: (newClass: Omit<ClassData, "id">) => {
+      // Ensure students array is initialized if not provided
+      const classWithStudents = {
+        ...newClass,
+        students: newClass.students || []
+      };
+      return classService.addClass(classWithStudents);
+    },
     onSuccess: () => {
       toast.success("Classe ajoutée avec succès");
       queryClient.invalidateQueries({ queryKey: ["classes"] });
