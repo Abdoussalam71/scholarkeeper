@@ -8,4 +8,5 @@ export interface ScheduleEvent {
   endTime: string;
   dayOfWeek: string;
   room: string;
+  classId?: string; // ID de la classe associée
 }

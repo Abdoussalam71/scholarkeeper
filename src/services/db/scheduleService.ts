@@ -8,16 +8,24 @@ export const scheduleService = {
     
     if (count === 0) {
       const courses = await db.courses.toArray();
-      const sampleSchedules = courses.map(course => ({
-        id: Math.random().toString(36).substring(2, 9),
-        courseId: course.id,
-        courseName: course.name,
-        teacherName: course.teacherName,
-        startTime: course.schedule.split(' - ')[0],
-        endTime: course.schedule.split(' - ')[1],
-        dayOfWeek: course.schedule.split(' ')[0],
-        room: `Salle ${Math.floor(Math.random() * 100) + 1}`
-      }));
+      const classes = await db.classes.toArray();
+      
+      const sampleSchedules = courses.flatMap(course => {
+        // Attribuer aléatoirement à une classe
+        const randomClass = classes[Math.floor(Math.random() * classes.length)];
+        
+        return {
+          id: Math.random().toString(36).substring(2, 9),
+          courseId: course.id,
+          courseName: course.name,
+          teacherName: course.teacherName,
+          startTime: course.schedule.split(' - ')[0],
+          endTime: course.schedule.split(' - ')[1],
+          dayOfWeek: course.schedule.split(' ')[0],
+          room: `Salle ${Math.floor(Math.random() * 100) + 1}`,
+          classId: randomClass ? randomClass.id : undefined
+        };
+      });
       
       await db.schedules.bulkAdd(sampleSchedules);
     }
@@ -25,6 +33,12 @@ export const scheduleService = {
   
   getAllSchedules: async (): Promise<ScheduleEvent[]> => {
     return await db.schedules.toArray();
+  },
+  
+  getScheduleByClassId: async (classId: string): Promise<ScheduleEvent[]> => {
+    return await db.schedules
+      .filter(schedule => schedule.classId === classId)
+      .toArray();
   },
   
   addSchedule: async (schedule: Omit<ScheduleEvent, 'id'>): Promise<ScheduleEvent> => {

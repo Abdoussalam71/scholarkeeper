@@ -29,6 +29,11 @@ const items = [
     url: "/courses",
   },
   {
+    title: "Classes",
+    icon: Users,
+    url: "/classes",
+  },
+  {
     title: "Emploi du temps",
     icon: Calendar,
     url: "/schedule",
