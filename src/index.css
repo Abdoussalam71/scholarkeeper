@@ -59,6 +59,11 @@
 
   body {
     @apply bg-background text-foreground font-inter antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+
+  html {
+    @apply scroll-smooth;
   }
 }
 
@@ -76,5 +81,13 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/50 dark:bg-black/30 border border-white/10 dark:border-white/5;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
   }
 }
