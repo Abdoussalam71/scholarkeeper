@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,7 +35,7 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
   const [date, setDate] = useState(payment?.paymentDate || new Date().toISOString().split('T')[0]);
   const [academicYear, setAcademicYear] = useState(payment?.academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
   const [paymentPlanId, setPaymentPlanId] = useState(payment?.paymentPlanId || "plan-1");
-  const [termNumber, setTermNumber] = useState(payment?.termNumber?.toString() || "");
+  const [termNumber, setTermNumber] = useState(payment?.termNumber?.toString() || "1");
   const [remainingBalance, setRemainingBalance] = useState(payment?.remainingBalance || 0);
 
   // État pour suivre les frais de la classe sélectionnée
@@ -56,7 +56,7 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
       setDate(payment?.paymentDate || new Date().toISOString().split('T')[0]);
       setAcademicYear(payment?.academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
       setPaymentPlanId(payment?.paymentPlanId || "plan-1");
-      setTermNumber(payment?.termNumber?.toString() || "");
+      setTermNumber(payment?.termNumber?.toString() || "1");
       setRemainingBalance(payment?.remainingBalance || 0);
       setSelectedClassFees(null);
     }
@@ -183,6 +183,9 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-playfair">{title}</DialogTitle>
+          <DialogDescription>
+            Remplissez les informations pour enregistrer un paiement
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">
@@ -203,7 +206,11 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           
           <div className="grid gap-2">
             <Label htmlFor="paymentPlan">Plan de paiement</Label>
-            <Select value={paymentPlanId} onValueChange={setPaymentPlanId}>
+            <Select 
+              value={paymentPlanId} 
+              onValueChange={setPaymentPlanId}
+              defaultValue="plan-1"
+            >
               <SelectTrigger id="paymentPlan">
                 <SelectValue placeholder="Sélectionner un plan" />
               </SelectTrigger>
@@ -220,7 +227,11 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           {paymentPlanId === "plan-2" && (
             <div className="grid gap-2">
               <Label htmlFor="termNumber">Trimestre</Label>
-              <Select value={termNumber} onValueChange={setTermNumber}>
+              <Select 
+                value={termNumber} 
+                onValueChange={setTermNumber}
+                defaultValue="1"
+              >
                 <SelectTrigger id="termNumber">
                   <SelectValue placeholder="Sélectionner un trimestre" />
                 </SelectTrigger>
@@ -293,7 +304,7 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           
           <div className="grid gap-2">
             <Label htmlFor="method">Méthode de paiement</Label>
-            <Select value={method} onValueChange={setMethod}>
+            <Select value={method} onValueChange={setMethod} defaultValue="espèces">
               <SelectTrigger id="method">
                 <SelectValue placeholder="Sélectionner une méthode" />
               </SelectTrigger>
@@ -309,7 +320,11 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           
           <div className="grid gap-2">
             <Label htmlFor="status">Statut</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as PaymentReceipt["status"])}>
+            <Select 
+              value={status} 
+              onValueChange={(value) => setStatus(value as PaymentReceipt["status"])}
+              defaultValue="en attente"
+            >
               <SelectTrigger id="status">
                 <SelectValue placeholder="Sélectionner un statut" />
               </SelectTrigger>
