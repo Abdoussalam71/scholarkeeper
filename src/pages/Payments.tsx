@@ -48,7 +48,7 @@ const demoPayments: Payment[] = [
   {
     id: "PAY-001",
     studentName: "Sophie Martin",
-    amount: 450,
+    amount: 250000,
     status: "payé",
     date: "15/09/2023",
     method: "carte bancaire",
@@ -57,7 +57,7 @@ const demoPayments: Payment[] = [
   {
     id: "PAY-002",
     studentName: "Thomas Dubois",
-    amount: 450,
+    amount: 250000,
     status: "en attente",
     date: "20/09/2023",
     method: "virement",
@@ -66,7 +66,7 @@ const demoPayments: Payment[] = [
   {
     id: "PAY-003",
     studentName: "Emma Petit",
-    amount: 75,
+    amount: 45000,
     status: "retard",
     date: "01/09/2023",
     method: "chèque",
@@ -75,7 +75,7 @@ const demoPayments: Payment[] = [
   {
     id: "PAY-004",
     studentName: "Lucas Bernard",
-    amount: 120,
+    amount: 75000,
     status: "payé",
     date: "10/09/2023",
     method: "carte bancaire",
@@ -84,7 +84,7 @@ const demoPayments: Payment[] = [
   {
     id: "PAY-005",
     studentName: "Chloé Richard",
-    amount: 85,
+    amount: 50000,
     status: "payé",
     date: "05/09/2023",
     method: "espèces",
@@ -122,6 +122,11 @@ const PaymentsPage = () => {
     .filter(p => p.status === "retard")
     .reduce((sum, p) => sum + p.amount, 0);
 
+  // Formater les montants en FCFA XOF
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString('fr-FR') + ' FCFA';
+  };
+
   // Helper pour obtenir la couleur du statut
   const getStatusColor = (status: Payment["status"]) => {
     switch (status) {
@@ -136,7 +141,7 @@ const PaymentsPage = () => {
     <AppLayout>
       <div className="p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-          <h1 className="text-2xl font-bold">Gestion des Paiements</h1>
+          <h1 className="text-2xl font-bold font-playfair">Gestion des Paiements</h1>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button>
               <Calendar className="mr-2 h-4 w-4" />
@@ -162,7 +167,7 @@ const PaymentsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalReceived.toLocaleString()} €</div>
+              <div className="text-2xl font-bold">{formatCurrency(totalReceived)}</div>
               <p className="text-xs text-green-600 mt-1">Paiements complétés</p>
             </CardContent>
           </Card>
@@ -174,7 +179,7 @@ const PaymentsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalPending.toLocaleString()} €</div>
+              <div className="text-2xl font-bold">{formatCurrency(totalPending)}</div>
               <p className="text-xs text-amber-600 mt-1">Paiements à venir</p>
             </CardContent>
           </Card>
@@ -186,7 +191,7 @@ const PaymentsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalLate.toLocaleString()} €</div>
+              <div className="text-2xl font-bold">{formatCurrency(totalLate)}</div>
               <p className="text-xs text-red-600 mt-1">Paiements en retard</p>
             </CardContent>
           </Card>
@@ -196,7 +201,7 @@ const PaymentsPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle>Historique des Paiements</CardTitle>
+              <CardTitle className="font-playfair">Historique des Paiements</CardTitle>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -251,7 +256,7 @@ const PaymentsPage = () => {
                           <TableRow key={payment.id}>
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{payment.amount} €</TableCell>
+                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
                             <TableCell>{payment.date}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>
@@ -308,7 +313,7 @@ const PaymentsPage = () => {
                           <TableRow key={payment.id}>
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{payment.amount} €</TableCell>
+                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
                             <TableCell>{payment.date}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>
@@ -365,7 +370,7 @@ const PaymentsPage = () => {
                           <TableRow key={payment.id}>
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{payment.amount} €</TableCell>
+                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
                             <TableCell>{payment.date}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>
@@ -422,7 +427,7 @@ const PaymentsPage = () => {
                           <TableRow key={payment.id}>
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{payment.amount} €</TableCell>
+                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
                             <TableCell>{payment.date}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>

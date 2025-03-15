@@ -1,238 +1,225 @@
 
-import { useState } from "react";
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useToast } from "@/components/ui/use-toast";
-import { Separator } from "@/components/ui/separator";
-import { useSchoolInfoStore } from "@/stores/schoolInfoStore";
-
-const formSchema = z.object({
-  name: z.string().min(3, "Le nom doit contenir au moins 3 caractères"),
-  address: z.string().min(5, "L'adresse doit contenir au moins 5 caractères"),
-  city: z.string().min(2, "La ville doit contenir au moins 2 caractères"),
-  postalCode: z.string().regex(/^\d{5}$/, "Le code postal doit contenir 5 chiffres"),
-  phone: z.string().regex(/^0\d{9}$/, "Le numéro de téléphone doit être au format 0XXXXXXXXX"),
-  email: z.string().email("Adresse email invalide"),
-  website: z.string().url("URL du site web invalide").optional().or(z.literal("")),
-  description: z.string().max(500, "La description ne doit pas dépasser 500 caractères").optional(),
-  principalName: z.string().min(3, "Le nom du directeur doit contenir au moins 3 caractères"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { toast } from "sonner";
+import { useSchoolInfoStore, SchoolInfo } from "@/stores/schoolInfoStore";
 
 const SchoolInfoSettings = () => {
-  const { toast } = useToast();
   const { schoolInfo, updateSchoolInfo } = useSchoolInfoStore();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: schoolInfo || {
-      name: "Lycée Jean Moulin",
-      address: "123 Avenue de l'Education",
-      city: "Paris",
-      postalCode: "75001",
-      phone: "0123456789",
-      email: "contact@lycee-jeanmoulin.fr",
-      website: "https://www.lycee-jeanmoulin.fr",
-      description: "Établissement d'enseignement secondaire et supérieur offrant des formations générales, techniques et professionnelles.",
-      principalName: "Mme Sophie Dubois",
-    },
-  });
-
-  const onSubmit = async (data: FormValues) => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update store
-      updateSchoolInfo(data);
-      
-      toast({
-        title: "Paramètres sauvegardés",
-        description: "Les informations de l'établissement ont été mises à jour avec succès.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la sauvegarde des informations.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  
+  // Valeurs par défaut pour le formulaire
+  const defaultSchoolInfo: SchoolInfo = {
+    name: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    phone: "",
+    email: "",
+    website: "",
+    description: "",
+    principalName: ""
   };
-
+  
+  const [formData, setFormData] = useState<SchoolInfo>(schoolInfo || defaultSchoolInfo);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  useEffect(() => {
+    if (schoolInfo) {
+      setFormData(schoolInfo);
+    }
+  }, [schoolInfo]);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Vérifier que tous les champs requis sont remplis
+    if (!formData.name || !formData.address || !formData.city || 
+        !formData.postalCode || !formData.phone || !formData.email || 
+        !formData.principalName) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+    
+    updateSchoolInfo(formData);
+    setIsEditing(false);
+    toast.success("Informations mises à jour avec succès");
+  };
+  
+  const handleReset = () => {
+    setFormData(schoolInfo || defaultSchoolInfo);
+    setIsEditing(false);
+  };
+  
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nom de l'établissement</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+    <div className="space-y-6">
+      {!isEditing && schoolInfo ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Nom de l'établissement</h3>
+              <p className="font-medium">{schoolInfo.name}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Directeur/Principal</h3>
+              <p>{schoolInfo.principalName}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Adresse</h3>
+              <p>{schoolInfo.address}, {schoolInfo.postalCode} {schoolInfo.city}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Contact</h3>
+              <p>{schoolInfo.phone}, {schoolInfo.email}</p>
+            </div>
+            {schoolInfo.website && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Site web</h3>
+                <p>{schoolInfo.website}</p>
+              </div>
             )}
-          />
+          </div>
           
-          <FormField
-            control={form.control}
-            name="principalName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nom du directeur/proviseur</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <Separator />
-        
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Adresse</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          {schoolInfo.description && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Description</h3>
+              <p className="text-sm">{schoolInfo.description}</p>
+            </div>
           )}
-        />
-        
-        <div className="grid gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ville</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           
-          <FormField
-            control={form.control}
-            name="postalCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Code postal</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <Separator />
-        
-        <div className="grid gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Téléphone</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input {...field} type="email" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <FormField
-          control={form.control}
-          name="website"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Site web</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormDescription>
-                L'URL complète du site web de l'établissement
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea 
-                  {...field} 
-                  placeholder="Décrivez brièvement votre établissement..." 
-                  className="min-h-[120px]"
-                />
-              </FormControl>
-              <FormDescription>
-                Une brève description de l'établissement (max. 500 caractères)
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Enregistrement..." : "Enregistrer les modifications"}
+          <Button 
+            variant="outline" 
+            onClick={() => setIsEditing(true)}
+            className="mt-4"
+          >
+            Modifier les informations
           </Button>
         </div>
-      </form>
-    </Form>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom de l'établissement *</Label>
+              <Input 
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Lycée XYZ"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="principalName">Directeur/Principal *</Label>
+              <Input 
+                id="principalName"
+                name="principalName"
+                value={formData.principalName}
+                onChange={handleChange}
+                placeholder="Jean Dupont"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse *</Label>
+              <Input 
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="123 rue de l'École"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">Code postal *</Label>
+                <Input 
+                  id="postalCode"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  placeholder="75001"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Ville *</Label>
+                <Input 
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Paris"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Téléphone *</Label>
+              <Input 
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="+33 1 23 45 67 89"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input 
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="contact@lycee.fr"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="website">Site web</Label>
+              <Input 
+                id="website"
+                name="website"
+                value={formData.website || ""}
+                onChange={handleChange}
+                placeholder="https://www.lycee.fr"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea 
+              id="description"
+              name="description"
+              value={formData.description || ""}
+              onChange={handleChange}
+              placeholder="Description de l'établissement..."
+              rows={4}
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Button type="submit">Enregistrer</Button>
+            {schoolInfo && (
+              <Button type="button" variant="outline" onClick={handleReset}>
+                Annuler
+              </Button>
+            )}
+          </div>
+        </form>
+      )}
+    </div>
   );
 };
 

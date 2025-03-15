@@ -1,11 +1,13 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentData } from "@/types/students";
 import { toast } from "sonner";
+import { useClassesData } from "@/hooks/useClassesData";
 
 interface StudentDialogProps {
   open: boolean;
@@ -21,12 +23,25 @@ export const StudentDialog = ({ open, onOpenChange, student, onSave, title }: St
   const [classRoom, setClassRoom] = useState(student?.class || "");
   const [email, setEmail] = useState(student?.email || "");
   const [attendance, setAttendance] = useState(student?.attendance?.toString() || "100");
+  
+  // Récupérer la liste des classes disponibles
+  const { classes } = useClassesData();
+
+  useEffect(() => {
+    if (open) {
+      setName(student?.name || "");
+      setAge(student?.age?.toString() || "");
+      setClassRoom(student?.class || "");
+      setEmail(student?.email || "");
+      setAttendance(student?.attendance?.toString() || "100");
+    }
+  }, [open, student]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !age || !classRoom || !email || !attendance) {
-      toast.error("Veuillez remplir tous les champs");
+    if (!name || !age || !email) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
@@ -58,7 +73,7 @@ export const StudentDialog = ({ open, onOpenChange, student, onSave, title }: St
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="font-playfair">{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">
@@ -84,12 +99,19 @@ export const StudentDialog = ({ open, onOpenChange, student, onSave, title }: St
           </div>
           <div className="grid gap-2">
             <Label htmlFor="class">Classe</Label>
-            <Input 
-              id="class" 
-              value={classRoom} 
-              onChange={(e) => setClassRoom(e.target.value)}
-              placeholder="Classe de l'étudiant" 
-            />
+            <Select value={classRoom} onValueChange={setClassRoom}>
+              <SelectTrigger id="class">
+                <SelectValue placeholder="Sélectionner une classe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Aucune classe</SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.name}>
+                    {cls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
