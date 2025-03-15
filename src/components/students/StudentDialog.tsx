@@ -104,7 +104,8 @@ export const StudentDialog = ({ open, onOpenChange, student, onSave, title }: St
                 <SelectValue placeholder="Sélectionner une classe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucune classe</SelectItem>
+                {/* Corrigé la valeur du SelectItem qui ne peut pas être vide */}
+                <SelectItem value="no_class">Aucune classe</SelectItem>
                 {classes.map((cls) => (
                   <SelectItem key={cls.id} value={cls.name}>
                     {cls.name}

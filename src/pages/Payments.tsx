@@ -31,62 +31,68 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import AppLayout from "@/components/layout/AppLayout";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PaymentDialog, PaymentData } from "@/components/payments/PaymentDialog";
 
 // Types de paiement pour démonstration
-interface Payment {
-  id: string;
-  studentName: string;
-  amount: number;
-  status: "payé" | "en attente" | "retard";
-  date: string;
-  method: "carte bancaire" | "espèces" | "virement" | "chèque";
-  category: "frais de scolarité" | "activité extrascolaire" | "cantine" | "transport";
-}
-
-// Données démo
-const demoPayments: Payment[] = [
+const initialPayments: PaymentData[] = [
   {
     id: "PAY-001",
+    studentId: "1",
     studentName: "Sophie Martin",
     amount: 250000,
+    discountPercentage: 0,
+    finalAmount: 250000,
     status: "payé",
-    date: "15/09/2023",
+    date: "2023-09-15",
     method: "carte bancaire",
     category: "frais de scolarité"
   },
   {
     id: "PAY-002",
+    studentId: "2",
     studentName: "Thomas Dubois",
     amount: 250000,
+    discountPercentage: 0,
+    finalAmount: 250000,
     status: "en attente",
-    date: "20/09/2023",
+    date: "2023-09-20",
     method: "virement",
     category: "frais de scolarité"
   },
   {
     id: "PAY-003",
+    studentId: "3",
     studentName: "Emma Petit",
     amount: 45000,
+    discountPercentage: 0,
+    finalAmount: 45000,
     status: "retard",
-    date: "01/09/2023",
+    date: "2023-09-01",
     method: "chèque",
     category: "activité extrascolaire"
   },
   {
     id: "PAY-004",
+    studentId: "4",
     studentName: "Lucas Bernard",
     amount: 75000,
+    discountPercentage: 10,
+    finalAmount: 67500,
     status: "payé",
-    date: "10/09/2023",
+    date: "2023-09-10",
     method: "carte bancaire",
     category: "cantine"
   },
   {
     id: "PAY-005",
+    studentId: "5",
     studentName: "Chloé Richard",
     amount: 50000,
+    discountPercentage: 5,
+    finalAmount: 47500,
     status: "payé",
-    date: "05/09/2023",
+    date: "2023-09-05",
     method: "espèces",
     category: "transport"
   }
@@ -95,9 +101,16 @@ const demoPayments: Payment[] = [
 const PaymentsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tab, setTab] = useState("all");
+  const [payments, setPayments] = useState<PaymentData[]>(initialPayments);
+  
+  // État pour les dialogues
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentData | null>(null);
   
   // Filtrer les paiements en fonction du terme de recherche et de l'onglet actif
-  const filteredPayments = demoPayments.filter(payment => {
+  const filteredPayments = payments.filter(payment => {
     const matchesSearch = payment.studentName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          payment.id.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -110,17 +123,17 @@ const PaymentsPage = () => {
   });
 
   // Obtenir les statistiques des paiements
-  const totalReceived = demoPayments
+  const totalReceived = payments
     .filter(p => p.status === "payé")
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + p.finalAmount, 0);
   
-  const totalPending = demoPayments
+  const totalPending = payments
     .filter(p => p.status === "en attente")
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + p.finalAmount, 0);
   
-  const totalLate = demoPayments
+  const totalLate = payments
     .filter(p => p.status === "retard")
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + p.finalAmount, 0);
 
   // Formater les montants en FCFA XOF
   const formatCurrency = (amount: number) => {
@@ -128,13 +141,49 @@ const PaymentsPage = () => {
   };
 
   // Helper pour obtenir la couleur du statut
-  const getStatusColor = (status: Payment["status"]) => {
+  const getStatusColor = (status: PaymentData["status"]) => {
     switch (status) {
       case "payé": return "text-green-600 bg-green-100";
       case "en attente": return "text-amber-600 bg-amber-100";
       case "retard": return "text-red-600 bg-red-100";
       default: return "";
     }
+  };
+
+  // Gestionnaires d'événements
+  const handleAddPayment = (payment: Omit<PaymentData, "id">) => {
+    const newPayment = {
+      ...payment,
+      id: `PAY-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
+    };
+    setPayments([...payments, newPayment]);
+  };
+
+  const handleEditPayment = (payment: PaymentData) => {
+    setSelectedPayment(payment);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdatePayment = (updatedPayment: Omit<PaymentData, "id">) => {
+    if (selectedPayment) {
+      const updatedPayments = payments.map(p => 
+        p.id === selectedPayment.id 
+          ? { ...updatedPayment, id: selectedPayment.id } 
+          : p
+      );
+      setPayments(updatedPayments);
+    }
+  };
+
+  const handleDeletePayment = () => {
+    if (selectedPayment) {
+      setPayments(payments.filter(p => p.id !== selectedPayment.id));
+    }
+  };
+
+  const handleDeleteClick = (payment: PaymentData) => {
+    setSelectedPayment(payment);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -151,7 +200,7 @@ const PaymentsPage = () => {
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
-            <Button>
+            <Button onClick={() => setAddDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nouveau Paiement
             </Button>
@@ -237,6 +286,8 @@ const PaymentsPage = () => {
                         <TableHead>ID</TableHead>
                         <TableHead>Étudiant</TableHead>
                         <TableHead>Montant</TableHead>
+                        <TableHead>Réduction</TableHead>
+                        <TableHead>Final</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Catégorie</TableHead>
                         <TableHead>Méthode</TableHead>
@@ -247,7 +298,7 @@ const PaymentsPage = () => {
                     <TableBody>
                       {filteredPayments.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                             Aucun paiement trouvé
                           </TableCell>
                         </TableRow>
@@ -257,7 +308,9 @@ const PaymentsPage = () => {
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
                             <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.date}</TableCell>
+                            <TableCell>{payment.discountPercentage}%</TableCell>
+                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
+                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>
                             </TableCell>
@@ -273,9 +326,14 @@ const PaymentsPage = () => {
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="outline" size="sm">
-                                Détails
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
+                                  Modifier
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
+                                  Supprimer
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -286,7 +344,7 @@ const PaymentsPage = () => {
               </TabsContent>
               
               <TabsContent value="paid" className="mt-0">
-                {/* Même tableau que "all" mais avec les filtres appropriés */}
+                {/* Même tableau que "all" avec les filtres appliqués automatiquement */}
                 <div className="rounded-md border overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -294,6 +352,8 @@ const PaymentsPage = () => {
                         <TableHead>ID</TableHead>
                         <TableHead>Étudiant</TableHead>
                         <TableHead>Montant</TableHead>
+                        <TableHead>Réduction</TableHead>
+                        <TableHead>Final</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Catégorie</TableHead>
                         <TableHead>Méthode</TableHead>
@@ -304,7 +364,7 @@ const PaymentsPage = () => {
                     <TableBody>
                       {filteredPayments.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                             Aucun paiement trouvé
                           </TableCell>
                         </TableRow>
@@ -314,7 +374,9 @@ const PaymentsPage = () => {
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
                             <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.date}</TableCell>
+                            <TableCell>{payment.discountPercentage}%</TableCell>
+                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
+                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>
                             </TableCell>
@@ -330,9 +392,14 @@ const PaymentsPage = () => {
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="outline" size="sm">
-                                Détails
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
+                                  Modifier
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
+                                  Supprimer
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -351,6 +418,8 @@ const PaymentsPage = () => {
                         <TableHead>ID</TableHead>
                         <TableHead>Étudiant</TableHead>
                         <TableHead>Montant</TableHead>
+                        <TableHead>Réduction</TableHead>
+                        <TableHead>Final</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Catégorie</TableHead>
                         <TableHead>Méthode</TableHead>
@@ -361,7 +430,7 @@ const PaymentsPage = () => {
                     <TableBody>
                       {filteredPayments.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                             Aucun paiement trouvé
                           </TableCell>
                         </TableRow>
@@ -371,7 +440,9 @@ const PaymentsPage = () => {
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
                             <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.date}</TableCell>
+                            <TableCell>{payment.discountPercentage}%</TableCell>
+                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
+                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>
                             </TableCell>
@@ -387,9 +458,14 @@ const PaymentsPage = () => {
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="outline" size="sm">
-                                Détails
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
+                                  Modifier
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
+                                  Supprimer
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -408,6 +484,8 @@ const PaymentsPage = () => {
                         <TableHead>ID</TableHead>
                         <TableHead>Étudiant</TableHead>
                         <TableHead>Montant</TableHead>
+                        <TableHead>Réduction</TableHead>
+                        <TableHead>Final</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Catégorie</TableHead>
                         <TableHead>Méthode</TableHead>
@@ -418,7 +496,7 @@ const PaymentsPage = () => {
                     <TableBody>
                       {filteredPayments.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                             Aucun paiement trouvé
                           </TableCell>
                         </TableRow>
@@ -428,7 +506,9 @@ const PaymentsPage = () => {
                             <TableCell className="font-medium">{payment.id}</TableCell>
                             <TableCell>{payment.studentName}</TableCell>
                             <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.date}</TableCell>
+                            <TableCell>{payment.discountPercentage}%</TableCell>
+                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
+                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
                             <TableCell>
                               <span className="capitalize">{payment.category}</span>
                             </TableCell>
@@ -444,9 +524,14 @@ const PaymentsPage = () => {
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="outline" size="sm">
-                                Détails
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
+                                  Modifier
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
+                                  Supprimer
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -458,6 +543,35 @@ const PaymentsPage = () => {
             </Tabs>
           </CardContent>
         </Card>
+        
+        {/* Dialogs */}
+        <PaymentDialog
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          onSave={handleAddPayment}
+          title="Ajouter un paiement"
+        />
+        
+        {selectedPayment && (
+          <>
+            <PaymentDialog
+              open={editDialogOpen}
+              onOpenChange={setEditDialogOpen}
+              payment={selectedPayment}
+              onSave={handleUpdatePayment}
+              title="Modifier le paiement"
+            />
+            
+            <ConfirmDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              onConfirm={handleDeletePayment}
+              title="Supprimer le paiement"
+              description={`Êtes-vous sûr de vouloir supprimer le paiement "${selectedPayment.id}" pour l'étudiant "${selectedPayment.studentName}" ? Cette action est irréversible.`}
+              confirmLabel="Supprimer"
+            />
+          </>
+        )}
       </div>
     </AppLayout>
   );
