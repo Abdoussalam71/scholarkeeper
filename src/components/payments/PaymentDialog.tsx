@@ -8,59 +8,116 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { useStudentsData } from "@/hooks/useStudentsData";
-
-export interface PaymentData {
-  id: string;
-  studentId: string;
-  studentName: string;
-  amount: number;
-  discountPercentage: number;
-  finalAmount: number;
-  status: "payé" | "en attente" | "retard";
-  date: string;
-  method: "carte bancaire" | "espèces" | "virement" | "chèque";
-  category: "frais de scolarité" | "activité extrascolaire" | "cantine" | "transport";
-}
+import { useFeesData } from "@/hooks/useFeesData";
+import { PaymentReceipt } from "@/types/fees";
 
 interface PaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  payment?: PaymentData;
-  onSave: (payment: Omit<PaymentData, "id">) => void;
+  payment?: PaymentReceipt;
+  onSave: (payment: Omit<PaymentReceipt, "id" | "receiptNumber" | "transactionId">) => void;
   title: string;
 }
 
 export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: PaymentDialogProps) => {
   const { students } = useStudentsData();
+  const { classFees, paymentPlans } = useFeesData();
 
   const [studentId, setStudentId] = useState(payment?.studentId || "");
+  const [studentName, setStudentName] = useState(payment?.studentName || "");
+  const [className, setClassName] = useState(payment?.className || "");
   const [amount, setAmount] = useState(payment?.amount?.toString() || "");
   const [discountPercentage, setDiscountPercentage] = useState(payment?.discountPercentage || 0);
+  const [originalAmount, setOriginalAmount] = useState(payment?.originalAmount || 0);
   const [finalAmount, setFinalAmount] = useState(payment?.finalAmount || 0);
-  const [status, setStatus] = useState<PaymentData["status"]>(payment?.status || "en attente");
-  const [method, setMethod] = useState<PaymentData["method"]>(payment?.method || "espèces");
-  const [category, setCategory] = useState<PaymentData["category"]>(payment?.category || "frais de scolarité");
-  const [date, setDate] = useState(payment?.date || new Date().toISOString().split('T')[0]);
+  const [status, setStatus] = useState<PaymentReceipt["status"]>(payment?.status || "en attente");
+  const [method, setMethod] = useState(payment?.paymentMethod || "espèces");
+  const [date, setDate] = useState(payment?.paymentDate || new Date().toISOString().split('T')[0]);
+  const [academicYear, setAcademicYear] = useState(payment?.academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
+  const [paymentPlanId, setPaymentPlanId] = useState(payment?.paymentPlanId || "plan-1");
+  const [termNumber, setTermNumber] = useState(payment?.termNumber?.toString() || "");
+  const [remainingBalance, setRemainingBalance] = useState(payment?.remainingBalance || 0);
 
-  // Calculer le montant final après réduction
-  useEffect(() => {
-    const baseAmount = parseFloat(amount) || 0;
-    const discount = baseAmount * (discountPercentage / 100);
-    setFinalAmount(baseAmount - discount);
-  }, [amount, discountPercentage]);
+  // État pour suivre les frais de la classe sélectionnée
+  const [selectedClassFees, setSelectedClassFees] = useState<any>(null);
 
   // Réinitialiser les valeurs à l'ouverture de la boîte de dialogue
   useEffect(() => {
     if (open) {
       setStudentId(payment?.studentId || "");
+      setStudentName(payment?.studentName || "");
+      setClassName(payment?.className || "");
       setAmount(payment?.amount?.toString() || "");
       setDiscountPercentage(payment?.discountPercentage || 0);
+      setOriginalAmount(payment?.originalAmount || 0);
+      setFinalAmount(payment?.finalAmount || 0);
       setStatus(payment?.status || "en attente");
-      setMethod(payment?.method || "espèces");
-      setCategory(payment?.category || "frais de scolarité");
-      setDate(payment?.date || new Date().toISOString().split('T')[0]);
+      setMethod(payment?.paymentMethod || "espèces");
+      setDate(payment?.paymentDate || new Date().toISOString().split('T')[0]);
+      setAcademicYear(payment?.academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
+      setPaymentPlanId(payment?.paymentPlanId || "plan-1");
+      setTermNumber(payment?.termNumber?.toString() || "");
+      setRemainingBalance(payment?.remainingBalance || 0);
+      setSelectedClassFees(null);
     }
   }, [open, payment]);
+
+  // Mettre à jour les informations de l'étudiant
+  useEffect(() => {
+    if (studentId) {
+      const student = students.find(s => s.id === studentId);
+      if (student) {
+        setStudentName(student.name);
+        setClassName(student.class);
+        
+        // Trouver les frais pour la classe de l'étudiant
+        const fees = classFees.find(f => f.className === student.class);
+        if (fees) {
+          setSelectedClassFees(fees);
+          
+          // Définir le montant en fonction du plan de paiement
+          const plan = paymentPlans.find(p => p.id === paymentPlanId);
+          if (plan) {
+            if (plan.instalments === 1) {
+              // Paiement intégral
+              setOriginalAmount(fees.yearlyAmount);
+            } else if (plan.instalments === 3) {
+              // Paiement trimestriel
+              setOriginalAmount(fees.termAmount);
+            }
+          }
+        }
+      }
+    }
+  }, [studentId, students, classFees, paymentPlanId, paymentPlans]);
+
+  // Mettre à jour le montant final en fonction de la réduction
+  useEffect(() => {
+    const discountAmount = originalAmount * (discountPercentage / 100);
+    const final = originalAmount - discountAmount;
+    setFinalAmount(final);
+    
+    // Si c'est un paiement intégral, le montant est le montant final
+    const plan = paymentPlans.find(p => p.id === paymentPlanId);
+    if (plan?.instalments === 1) {
+      setAmount(final.toString());
+      setRemainingBalance(0);
+    } else if (plan?.instalments === 3) {
+      // Pour un paiement trimestriel, le montant par défaut est le montant du trimestre
+      setAmount(final.toString());
+      
+      // Calculer le solde restant (pour les trimestres suivants)
+      if (selectedClassFees) {
+        const termCount = parseInt(termNumber || "1");
+        const termsRemaining = 3 - termCount;
+        if (termsRemaining > 0) {
+          setRemainingBalance(selectedClassFees.termAmount * termsRemaining);
+        } else {
+          setRemainingBalance(0);
+        }
+      }
+    }
+  }, [originalAmount, discountPercentage, paymentPlanId, termNumber, paymentPlans, selectedClassFees]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +127,7 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
       return;
     }
 
-    const amountNum = parseFloat(amount);
+    const amountNum = parseFloat(amount.replace(/\s/g, ""));
 
     if (isNaN(amountNum) || amountNum <= 0) {
       toast.error("Le montant doit être un nombre positif");
@@ -84,16 +141,34 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
       return;
     }
 
+    // Vérifier le plan de paiement
+    const selectedPlan = paymentPlans.find(p => p.id === paymentPlanId);
+    if (!selectedPlan) {
+      toast.error("Plan de paiement invalide");
+      return;
+    }
+
+    // Vérifier le numéro de trimestre pour les paiements trimestriels
+    if (selectedPlan.instalments === 3 && (!termNumber || parseInt(termNumber) < 1 || parseInt(termNumber) > 3)) {
+      toast.error("Veuillez sélectionner un trimestre valide (1, 2 ou 3)");
+      return;
+    }
+
     onSave({
       studentId,
       studentName: student.name,
+      className: student.class,
       amount: amountNum,
+      originalAmount,
       discountPercentage,
       finalAmount,
       status,
-      date,
-      method,
-      category
+      paymentDate: date,
+      paymentMethod: method,
+      academicYear,
+      paymentPlanId,
+      termNumber: termNumber ? parseInt(termNumber) : undefined,
+      remainingBalance
     });
 
     onOpenChange(false);
@@ -105,7 +180,7 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-playfair">{title}</DialogTitle>
         </DialogHeader>
@@ -119,7 +194,7 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
               <SelectContent>
                 {students.map((student) => (
                   <SelectItem key={student.id} value={student.id}>
-                    {student.name}
+                    {student.name} - {student.class}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -127,16 +202,53 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           </div>
           
           <div className="grid gap-2">
-            <Label htmlFor="amount">Montant (FCFA)</Label>
-            <Input 
-              id="amount" 
-              type="number" 
-              value={amount} 
-              onChange={(e) => setAmount(e.target.value)}
-              min="0"
-              placeholder="Montant en FCFA" 
-            />
+            <Label htmlFor="paymentPlan">Plan de paiement</Label>
+            <Select value={paymentPlanId} onValueChange={setPaymentPlanId}>
+              <SelectTrigger id="paymentPlan">
+                <SelectValue placeholder="Sélectionner un plan" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentPlans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id}>
+                    {plan.name} - {plan.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          
+          {paymentPlanId === "plan-2" && (
+            <div className="grid gap-2">
+              <Label htmlFor="termNumber">Trimestre</Label>
+              <Select value={termNumber} onValueChange={setTermNumber}>
+                <SelectTrigger id="termNumber">
+                  <SelectValue placeholder="Sélectionner un trimestre" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Trimestre 1</SelectItem>
+                  <SelectItem value="2">Trimestre 2</SelectItem>
+                  <SelectItem value="3">Trimestre 3</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          {selectedClassFees && (
+            <div className="grid gap-2 bg-muted p-3 rounded-md">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Frais annuels:</span>
+                <span>{formatCurrency(selectedClassFees.yearlyAmount)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Frais d'inscription:</span>
+                <span>{formatCurrency(selectedClassFees.registrationFee)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Montant par trimestre:</span>
+                <span>{formatCurrency(selectedClassFees.termAmount)}</span>
+              </div>
+            </div>
+          )}
           
           <div className="grid gap-2">
             <div className="flex justify-between">
@@ -157,11 +269,11 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           <div className="grid gap-2 bg-muted p-3 rounded-md">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Montant original:</span>
-              <span>{formatCurrency(parseFloat(amount) || 0)}</span>
+              <span>{formatCurrency(originalAmount)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Réduction:</span>
-              <span>-{formatCurrency(((parseFloat(amount) || 0) * discountPercentage) / 100)}</span>
+              <span>-{formatCurrency((originalAmount * discountPercentage) / 100)}</span>
             </div>
             <div className="flex justify-between items-center font-semibold">
               <span>Montant final:</span>
@@ -170,23 +282,18 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           </div>
           
           <div className="grid gap-2">
-            <Label htmlFor="category">Catégorie</Label>
-            <Select value={category} onValueChange={(value) => setCategory(value as PaymentData["category"])}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Sélectionner une catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="frais de scolarité">Frais de scolarité</SelectItem>
-                <SelectItem value="activité extrascolaire">Activité extrascolaire</SelectItem>
-                <SelectItem value="cantine">Cantine</SelectItem>
-                <SelectItem value="transport">Transport</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="amount">Montant à payer (FCFA)</Label>
+            <Input 
+              id="amount" 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Montant en FCFA" 
+            />
           </div>
           
           <div className="grid gap-2">
             <Label htmlFor="method">Méthode de paiement</Label>
-            <Select value={method} onValueChange={(value) => setMethod(value as PaymentData["method"])}>
+            <Select value={method} onValueChange={setMethod}>
               <SelectTrigger id="method">
                 <SelectValue placeholder="Sélectionner une méthode" />
               </SelectTrigger>
@@ -195,13 +302,14 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
                 <SelectItem value="espèces">Espèces</SelectItem>
                 <SelectItem value="virement">Virement</SelectItem>
                 <SelectItem value="chèque">Chèque</SelectItem>
+                <SelectItem value="mobile money">Mobile Money</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="grid gap-2">
             <Label htmlFor="status">Statut</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as PaymentData["status"])}>
+            <Select value={status} onValueChange={(value) => setStatus(value as PaymentReceipt["status"])}>
               <SelectTrigger id="status">
                 <SelectValue placeholder="Sélectionner un statut" />
               </SelectTrigger>
@@ -220,6 +328,16 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
               type="date" 
               value={date} 
               onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="academicYear">Année académique</Label>
+            <Input 
+              id="academicYear" 
+              value={academicYear} 
+              onChange={(e) => setAcademicYear(e.target.value)}
+              placeholder="ex: 2023-2024" 
             />
           </div>
           

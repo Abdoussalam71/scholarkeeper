@@ -7,6 +7,9 @@ import {
   Filter, 
   Plus, 
   Search, 
+  Receipt,
+  PiggyBank,
+  School
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,108 +35,64 @@ import {
 } from "@/components/ui/tabs";
 import AppLayout from "@/components/layout/AppLayout";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { PaymentDialog, PaymentData } from "@/components/payments/PaymentDialog";
-
-// Types de paiement pour démonstration
-const initialPayments: PaymentData[] = [
-  {
-    id: "PAY-001",
-    studentId: "1",
-    studentName: "Sophie Martin",
-    amount: 250000,
-    discountPercentage: 0,
-    finalAmount: 250000,
-    status: "payé",
-    date: "2023-09-15",
-    method: "carte bancaire",
-    category: "frais de scolarité"
-  },
-  {
-    id: "PAY-002",
-    studentId: "2",
-    studentName: "Thomas Dubois",
-    amount: 250000,
-    discountPercentage: 0,
-    finalAmount: 250000,
-    status: "en attente",
-    date: "2023-09-20",
-    method: "virement",
-    category: "frais de scolarité"
-  },
-  {
-    id: "PAY-003",
-    studentId: "3",
-    studentName: "Emma Petit",
-    amount: 45000,
-    discountPercentage: 0,
-    finalAmount: 45000,
-    status: "retard",
-    date: "2023-09-01",
-    method: "chèque",
-    category: "activité extrascolaire"
-  },
-  {
-    id: "PAY-004",
-    studentId: "4",
-    studentName: "Lucas Bernard",
-    amount: 75000,
-    discountPercentage: 10,
-    finalAmount: 67500,
-    status: "payé",
-    date: "2023-09-10",
-    method: "carte bancaire",
-    category: "cantine"
-  },
-  {
-    id: "PAY-005",
-    studentId: "5",
-    studentName: "Chloé Richard",
-    amount: 50000,
-    discountPercentage: 5,
-    finalAmount: 47500,
-    status: "payé",
-    date: "2023-09-05",
-    method: "espèces",
-    category: "transport"
-  }
-];
+import { PaymentDialog } from "@/components/payments/PaymentDialog";
+import { ClassFeesDialog } from "@/components/fees/ClassFeesDialog";
+import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
+import { useFeesData } from "@/hooks/useFeesData";
+import { useStudentsData } from "@/hooks/useStudentsData";
 
 const PaymentsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tab, setTab] = useState("all");
-  const [payments, setPayments] = useState<PaymentData[]>(initialPayments);
+  const [currentView, setCurrentView] = useState<"receipts" | "fees">("receipts");
   
-  // État pour les dialogues
+  // États pour les dialogues
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentData | null>(null);
+  const [addFeesDialogOpen, setAddFeesDialogOpen] = useState(false);
+  const [editFeesDialogOpen, setEditFeesDialogOpen] = useState(false);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  
+  // État pour l'élément sélectionné
+  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
+  const [selectedFees, setSelectedFees] = useState<any | null>(null);
+  
+  // Hooks pour les données
+  const { classFees, allReceipts, addClassFees, updateClassFees, deleteClassFees, addReceipt } = useFeesData();
+  const { students } = useStudentsData();
   
   // Filtrer les paiements en fonction du terme de recherche et de l'onglet actif
-  const filteredPayments = payments.filter(payment => {
-    const matchesSearch = payment.studentName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         payment.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredReceipts = allReceipts.filter(receipt => {
+    const matchesSearch = receipt.studentName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          receipt.transactionId.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (tab === "all") return matchesSearch;
-    if (tab === "pending") return matchesSearch && payment.status === "en attente";
-    if (tab === "paid") return matchesSearch && payment.status === "payé";
-    if (tab === "late") return matchesSearch && payment.status === "retard";
+    if (tab === "pending") return matchesSearch && receipt.status === "en attente";
+    if (tab === "paid") return matchesSearch && receipt.status === "payé";
+    if (tab === "late") return matchesSearch && receipt.status === "retard";
     
     return matchesSearch;
   });
 
+  // Filtrer les frais de scolarité
+  const filteredFees = classFees.filter(fee => 
+    fee.className.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    fee.academicYear.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   // Obtenir les statistiques des paiements
-  const totalReceived = payments
+  const totalReceived = allReceipts
     .filter(p => p.status === "payé")
-    .reduce((sum, p) => sum + p.finalAmount, 0);
+    .reduce((sum, p) => sum + p.amount, 0);
   
-  const totalPending = payments
+  const totalPending = allReceipts
     .filter(p => p.status === "en attente")
-    .reduce((sum, p) => sum + p.finalAmount, 0);
+    .reduce((sum, p) => sum + p.amount, 0);
   
-  const totalLate = payments
+  const totalLate = allReceipts
     .filter(p => p.status === "retard")
-    .reduce((sum, p) => sum + p.finalAmount, 0);
+    .reduce((sum, p) => sum + p.amount, 0);
 
   // Formater les montants en FCFA XOF
   const formatCurrency = (amount: number) => {
@@ -141,7 +100,7 @@ const PaymentsPage = () => {
   };
 
   // Helper pour obtenir la couleur du statut
-  const getStatusColor = (status: PaymentData["status"]) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "payé": return "text-green-600 bg-green-100";
       case "en attente": return "text-amber-600 bg-amber-100";
@@ -150,39 +109,60 @@ const PaymentsPage = () => {
     }
   };
 
-  // Gestionnaires d'événements
-  const handleAddPayment = (payment: Omit<PaymentData, "id">) => {
-    const newPayment = {
-      ...payment,
-      id: `PAY-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
-    };
-    setPayments([...payments, newPayment]);
+  // Gestionnaires d'événements pour les paiements
+  const handleAddPayment = (payment: any) => {
+    addReceipt(payment);
   };
 
-  const handleEditPayment = (payment: PaymentData) => {
+  const handleEditPayment = (payment: any) => {
     setSelectedPayment(payment);
     setEditDialogOpen(true);
   };
 
-  const handleUpdatePayment = (updatedPayment: Omit<PaymentData, "id">) => {
-    if (selectedPayment) {
-      const updatedPayments = payments.map(p => 
-        p.id === selectedPayment.id 
-          ? { ...updatedPayment, id: selectedPayment.id } 
-          : p
-      );
-      setPayments(updatedPayments);
-    }
+  const handleUpdatePayment = (updatedPayment: any) => {
+    // Cette fonctionnalité serait implémentée si nous avions un service pour mettre à jour les reçus
+    console.log("Updated payment:", updatedPayment);
   };
 
   const handleDeletePayment = () => {
-    if (selectedPayment) {
-      setPayments(payments.filter(p => p.id !== selectedPayment.id));
+    // Cette fonctionnalité serait implémentée si nous avions un service pour supprimer les reçus
+    console.log("Deleted payment:", selectedPayment);
+  };
+
+  // Gestionnaires d'événements pour les frais de scolarité
+  const handleAddClassFees = (fees: any) => {
+    addClassFees(fees);
+  };
+
+  const handleEditClassFees = (fees: any) => {
+    setSelectedFees(fees);
+    setEditFeesDialogOpen(true);
+  };
+
+  const handleUpdateClassFees = (updatedFees: any) => {
+    if (selectedFees) {
+      updateClassFees(selectedFees.id, updatedFees);
     }
   };
 
-  const handleDeleteClick = (payment: PaymentData) => {
+  const handleDeleteClassFees = () => {
+    if (selectedFees) {
+      deleteClassFees(selectedFees.id);
+    }
+  };
+
+  const handleViewReceipt = (receipt: any) => {
+    setSelectedPayment(receipt);
+    setReceiptDialogOpen(true);
+  };
+
+  const handleDeleteClick = (payment: any) => {
     setSelectedPayment(payment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteFeesClick = (fees: any) => {
+    setSelectedFees(fees);
     setDeleteDialogOpen(true);
   };
 
@@ -192,65 +172,71 @@ const PaymentsPage = () => {
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <h1 className="text-2xl font-bold font-playfair">Gestion des Paiements</h1>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button>
-              <Calendar className="mr-2 h-4 w-4" />
-              Période
+            <Button variant="outline" onClick={() => setCurrentView("receipts")} 
+              className={currentView === "receipts" ? "bg-primary text-primary-foreground" : ""}>
+              <Receipt className="mr-2 h-4 w-4" />
+              Paiements
             </Button>
-            <Button>
-              <Download className="mr-2 h-4 w-4" />
-              Exporter
+            <Button variant="outline" onClick={() => setCurrentView("fees")}
+              className={currentView === "fees" ? "bg-primary text-primary-foreground" : ""}>
+              <School className="mr-2 h-4 w-4" />
+              Frais scolaires
             </Button>
-            <Button onClick={() => setAddDialogOpen(true)}>
+            <Button onClick={currentView === "receipts" ? () => setAddDialogOpen(true) : () => setAddFeesDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Nouveau Paiement
+              {currentView === "receipts" ? "Nouveau Paiement" : "Nouveaux Frais"}
             </Button>
           </div>
         </div>
 
-        {/* Cartes récapitulatives */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Reçu
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalReceived)}</div>
-              <p className="text-xs text-green-600 mt-1">Paiements complétés</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                En Attente
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalPending)}</div>
-              <p className="text-xs text-amber-600 mt-1">Paiements à venir</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                En Retard
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalLate)}</div>
-              <p className="text-xs text-red-600 mt-1">Paiements en retard</p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Cartes récapitulatives - visibles uniquement dans la vue des paiements */}
+        {currentView === "receipts" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Reçu
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalReceived)}</div>
+                <p className="text-xs text-green-600 mt-1">Paiements complétés</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  En Attente
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalPending)}</div>
+                <p className="text-xs text-amber-600 mt-1">Paiements à venir</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  En Retard
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalLate)}</div>
+                <p className="text-xs text-red-600 mt-1">Paiements en retard</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        {/* Liste des paiements */}
+        {/* Contenu principal - conditionné par la vue actuelle */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle className="font-playfair">Historique des Paiements</CardTitle>
+              <CardTitle className="font-playfair">
+                {currentView === "receipts" ? "Historique des Paiements" : "Frais Scolaires par Classe"}
+              </CardTitle>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -270,281 +256,290 @@ const PaymentsPage = () => {
           </CardHeader>
           
           <CardContent>
-            <Tabs defaultValue="all" className="w-full" onValueChange={setTab}>
-              <TabsList className="grid grid-cols-4 mb-4">
-                <TabsTrigger value="all">Tous</TabsTrigger>
-                <TabsTrigger value="paid">Payés</TabsTrigger>
-                <TabsTrigger value="pending">En attente</TabsTrigger>
-                <TabsTrigger value="late">En retard</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="all" className="mt-0">
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Étudiant</TableHead>
-                        <TableHead>Montant</TableHead>
-                        <TableHead>Réduction</TableHead>
-                        <TableHead>Final</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Catégorie</TableHead>
-                        <TableHead>Méthode</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPayments.length === 0 ? (
+            {currentView === "receipts" ? (
+              <Tabs defaultValue="all" className="w-full" onValueChange={setTab}>
+                <TabsList className="grid grid-cols-4 mb-4">
+                  <TabsTrigger value="all">Tous</TabsTrigger>
+                  <TabsTrigger value="paid">Payés</TabsTrigger>
+                  <TabsTrigger value="pending">En attente</TabsTrigger>
+                  <TabsTrigger value="late">En retard</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="all" className="mt-0">
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                            Aucun paiement trouvé
-                          </TableCell>
+                          <TableHead>N° Reçu</TableHead>
+                          <TableHead>Étudiant</TableHead>
+                          <TableHead>Classe</TableHead>
+                          <TableHead>Montant</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Méthode</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ) : (
-                        filteredPayments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">{payment.id}</TableCell>
-                            <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.discountPercentage}%</TableCell>
-                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
-                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
-                            <TableCell>
-                              <span className="capitalize">{payment.category}</span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                <span className="capitalize">{payment.method}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(payment.status)}`}>
-                                {payment.status}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
-                                  Modifier
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
-                                  Supprimer
-                                </Button>
-                              </div>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredReceipts.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                              Aucun paiement trouvé
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="paid" className="mt-0">
-                {/* Même tableau que "all" avec les filtres appliqués automatiquement */}
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Étudiant</TableHead>
-                        <TableHead>Montant</TableHead>
-                        <TableHead>Réduction</TableHead>
-                        <TableHead>Final</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Catégorie</TableHead>
-                        <TableHead>Méthode</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPayments.length === 0 ? (
+                        ) : (
+                          filteredReceipts.map((receipt) => (
+                            <TableRow key={receipt.id}>
+                              <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
+                              <TableCell>{receipt.studentName}</TableCell>
+                              <TableCell>{receipt.className}</TableCell>
+                              <TableCell>{formatCurrency(receipt.amount)}</TableCell>
+                              <TableCell>{new Date(receipt.paymentDate).toLocaleDateString('fr-FR')}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                  <span className="capitalize">{receipt.paymentMethod}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(receipt.status)}`}>
+                                  {receipt.status}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => handleViewReceipt(receipt)}>
+                                    Voir reçu
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+                
+                {/* Les autres onglets ont le même contenu mais sont filtrés automatiquement */}
+                <TabsContent value="paid" className="mt-0">
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                            Aucun paiement trouvé
-                          </TableCell>
+                          <TableHead>N° Reçu</TableHead>
+                          <TableHead>Étudiant</TableHead>
+                          <TableHead>Classe</TableHead>
+                          <TableHead>Montant</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Méthode</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ) : (
-                        filteredPayments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">{payment.id}</TableCell>
-                            <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.discountPercentage}%</TableCell>
-                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
-                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
-                            <TableCell>
-                              <span className="capitalize">{payment.category}</span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                <span className="capitalize">{payment.method}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(payment.status)}`}>
-                                {payment.status}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
-                                  Modifier
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
-                                  Supprimer
-                                </Button>
-                              </div>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredReceipts.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                              Aucun paiement trouvé
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="pending" className="mt-0">
-                {/* Même structure que les autres onglets */}
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Étudiant</TableHead>
-                        <TableHead>Montant</TableHead>
-                        <TableHead>Réduction</TableHead>
-                        <TableHead>Final</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Catégorie</TableHead>
-                        <TableHead>Méthode</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPayments.length === 0 ? (
+                        ) : (
+                          filteredReceipts.map((receipt) => (
+                            <TableRow key={receipt.id}>
+                              <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
+                              <TableCell>{receipt.studentName}</TableCell>
+                              <TableCell>{receipt.className}</TableCell>
+                              <TableCell>{formatCurrency(receipt.amount)}</TableCell>
+                              <TableCell>{new Date(receipt.paymentDate).toLocaleDateString('fr-FR')}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                  <span className="capitalize">{receipt.paymentMethod}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(receipt.status)}`}>
+                                  {receipt.status}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => handleViewReceipt(receipt)}>
+                                    Voir reçu
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="pending" className="mt-0">
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                            Aucun paiement trouvé
-                          </TableCell>
+                          <TableHead>N° Reçu</TableHead>
+                          <TableHead>Étudiant</TableHead>
+                          <TableHead>Classe</TableHead>
+                          <TableHead>Montant</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Méthode</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ) : (
-                        filteredPayments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">{payment.id}</TableCell>
-                            <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.discountPercentage}%</TableCell>
-                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
-                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
-                            <TableCell>
-                              <span className="capitalize">{payment.category}</span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                <span className="capitalize">{payment.method}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(payment.status)}`}>
-                                {payment.status}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
-                                  Modifier
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
-                                  Supprimer
-                                </Button>
-                              </div>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredReceipts.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                              Aucun paiement trouvé
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="late" className="mt-0">
-                {/* Même structure que les autres onglets */}
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Étudiant</TableHead>
-                        <TableHead>Montant</TableHead>
-                        <TableHead>Réduction</TableHead>
-                        <TableHead>Final</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Catégorie</TableHead>
-                        <TableHead>Méthode</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPayments.length === 0 ? (
+                        ) : (
+                          filteredReceipts.map((receipt) => (
+                            <TableRow key={receipt.id}>
+                              <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
+                              <TableCell>{receipt.studentName}</TableCell>
+                              <TableCell>{receipt.className}</TableCell>
+                              <TableCell>{formatCurrency(receipt.amount)}</TableCell>
+                              <TableCell>{new Date(receipt.paymentDate).toLocaleDateString('fr-FR')}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                  <span className="capitalize">{receipt.paymentMethod}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(receipt.status)}`}>
+                                  {receipt.status}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => handleViewReceipt(receipt)}>
+                                    Voir reçu
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="late" className="mt-0">
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                            Aucun paiement trouvé
-                          </TableCell>
+                          <TableHead>N° Reçu</TableHead>
+                          <TableHead>Étudiant</TableHead>
+                          <TableHead>Classe</TableHead>
+                          <TableHead>Montant</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Méthode</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ) : (
-                        filteredPayments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">{payment.id}</TableCell>
-                            <TableCell>{payment.studentName}</TableCell>
-                            <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell>{payment.discountPercentage}%</TableCell>
-                            <TableCell>{formatCurrency(payment.finalAmount)}</TableCell>
-                            <TableCell>{new Date(payment.date).toLocaleDateString('fr-FR')}</TableCell>
-                            <TableCell>
-                              <span className="capitalize">{payment.category}</span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                <span className="capitalize">{payment.method}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(payment.status)}`}>
-                                {payment.status}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditPayment(payment)}>
-                                  Modifier
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(payment)}>
-                                  Supprimer
-                                </Button>
-                              </div>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredReceipts.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                              Aucun paiement trouvé
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-            </Tabs>
+                        ) : (
+                          filteredReceipts.map((receipt) => (
+                            <TableRow key={receipt.id}>
+                              <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
+                              <TableCell>{receipt.studentName}</TableCell>
+                              <TableCell>{receipt.className}</TableCell>
+                              <TableCell>{formatCurrency(receipt.amount)}</TableCell>
+                              <TableCell>{new Date(receipt.paymentDate).toLocaleDateString('fr-FR')}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                  <span className="capitalize">{receipt.paymentMethod}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(receipt.status)}`}>
+                                  {receipt.status}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => handleViewReceipt(receipt)}>
+                                    Voir reçu
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              // Vue des frais scolaires
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Classe</TableHead>
+                      <TableHead>Frais annuels</TableHead>
+                      <TableHead>Frais d'inscription</TableHead>
+                      <TableHead>Par trimestre</TableHead>
+                      <TableHead>Année académique</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredFees.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          Aucun frais scolaire trouvé
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredFees.map((fee) => (
+                        <TableRow key={fee.id}>
+                          <TableCell className="font-medium">{fee.className}</TableCell>
+                          <TableCell>{formatCurrency(fee.yearlyAmount)}</TableCell>
+                          <TableCell>{formatCurrency(fee.registrationFee)}</TableCell>
+                          <TableCell>{formatCurrency(fee.termAmount)}</TableCell>
+                          <TableCell>{fee.academicYear}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handleEditClassFees(fee)}>
+                                Modifier
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={() => handleDeleteFeesClick(fee)}>
+                                Supprimer
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
         
-        {/* Dialogs */}
+        {/* Dialogs pour les paiements */}
         <PaymentDialog
           open={addDialogOpen}
           onOpenChange={setAddDialogOpen}
@@ -562,12 +557,47 @@ const PaymentsPage = () => {
               title="Modifier le paiement"
             />
             
+            <PaymentReceipt
+              open={receiptDialogOpen}
+              onOpenChange={setReceiptDialogOpen}
+              receipt={selectedPayment}
+            />
+            
             <ConfirmDialog
-              open={deleteDialogOpen}
+              open={deleteDialogOpen && currentView === "receipts"}
               onOpenChange={setDeleteDialogOpen}
               onConfirm={handleDeletePayment}
               title="Supprimer le paiement"
-              description={`Êtes-vous sûr de vouloir supprimer le paiement "${selectedPayment.id}" pour l'étudiant "${selectedPayment.studentName}" ? Cette action est irréversible.`}
+              description={`Êtes-vous sûr de vouloir supprimer le paiement "${selectedPayment.receiptNumber}" pour l'étudiant "${selectedPayment.studentName}" ? Cette action est irréversible.`}
+              confirmLabel="Supprimer"
+            />
+          </>
+        )}
+        
+        {/* Dialogs pour les frais scolaires */}
+        <ClassFeesDialog
+          open={addFeesDialogOpen}
+          onOpenChange={setAddFeesDialogOpen}
+          onSave={handleAddClassFees}
+          title="Ajouter des frais scolaires"
+        />
+        
+        {selectedFees && (
+          <>
+            <ClassFeesDialog
+              open={editFeesDialogOpen}
+              onOpenChange={setEditFeesDialogOpen}
+              classFees={selectedFees}
+              onSave={handleUpdateClassFees}
+              title="Modifier les frais scolaires"
+            />
+            
+            <ConfirmDialog
+              open={deleteDialogOpen && currentView === "fees"}
+              onOpenChange={setDeleteDialogOpen}
+              onConfirm={handleDeleteClassFees}
+              title="Supprimer les frais scolaires"
+              description={`Êtes-vous sûr de vouloir supprimer les frais scolaires pour la classe "${selectedFees.className}" ? Cette action est irréversible.`}
               confirmLabel="Supprimer"
             />
           </>
