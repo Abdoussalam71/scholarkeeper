@@ -1,9 +1,8 @@
-
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PaymentReceipt as PaymentReceiptType } from "@/types/fees";
-import { useSchoolInfo } from "@/stores/schoolInfoStore";
+import { useSchoolInfoStore } from "@/stores/schoolInfoStore";
 import { Download, Printer } from "lucide-react";
 import { format } from "date-fns";
 
@@ -15,7 +14,7 @@ interface PaymentReceiptProps {
 
 export const PaymentReceipt = ({ open, onOpenChange, receipt }: PaymentReceiptProps) => {
   const receiptRef = useRef<HTMLDivElement>(null);
-  const { schoolInfo } = useSchoolInfo();
+  const { schoolInfo } = useSchoolInfoStore();
   
   const formatCurrency = (value: number) => {
     return value.toLocaleString('fr-FR') + ' FCFA';
@@ -70,9 +69,9 @@ export const PaymentReceipt = ({ open, onOpenChange, receipt }: PaymentReceiptPr
         
         <div ref={receiptRef} className="receipt bg-white p-6 rounded-lg border">
           <div className="receipt-header">
-            <div className="school-name">{schoolInfo.name}</div>
-            <div>{schoolInfo.address}</div>
-            <div>{schoolInfo.phone} - {schoolInfo.email}</div>
+            <div className="school-name">{schoolInfo?.name}</div>
+            <div>{schoolInfo?.address}</div>
+            <div>{schoolInfo?.phone} - {schoolInfo?.email}</div>
           </div>
           
           <div className="receipt-title font-bold text-xl">REÇU DE PAIEMENT</div>
