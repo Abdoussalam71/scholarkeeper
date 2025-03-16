@@ -139,7 +139,7 @@ export const PaymentReceipt = ({ open, onOpenChange, receipt }: PaymentReceiptPr
               <span className="receipt-label">Mode de paiement:</span>
               <span className="receipt-data capitalize">{receipt.paymentMethod}</span>
             </div>
-            {receipt.termNumber && (
+            {receipt.termNumber !== undefined && (
               <div className="receipt-row">
                 <span className="receipt-label">Trimestre:</span>
                 <span className="receipt-data">{receipt.termNumber}</span>

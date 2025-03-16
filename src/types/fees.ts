@@ -34,4 +34,5 @@ export interface PaymentReceipt {
   finalAmount: number;
   status: "payé" | "en attente" | "retard";
   isFullPayment: boolean; // Indique si le paiement a soldé le compte
+  termNumber?: number; // Ajout du numéro de trimestre (optionnel)
 }

@@ -39,6 +39,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PaymentDialog } from "@/components/payments/PaymentDialog";
 import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
+import { ClassFeesDialog } from "@/components/fees/ClassFeesDialog";
 import { useFeesData } from "@/hooks/useFeesData";
 import { useStudentsData } from "@/hooks/useStudentsData";
 import { toast } from "sonner";
