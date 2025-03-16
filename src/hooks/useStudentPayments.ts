@@ -14,26 +14,29 @@ export function useStudentPayments(studentId: string) {
     enabled: !!studentId
   });
   
-  // Calculer le total payé
-  const totalPaid = studentPayments.reduce((sum, payment) => {
-    if (payment.status === "payé") {
-      return sum + payment.amount;
-    }
-    return sum;
-  }, 0);
+  // Calculer le total payé pour l'année académique en cours
+  const currentAcademicYear = `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
   
-  // Calculer le total dû
-  const totalDue = studentPayments.reduce((sum, payment) => {
-    return sum + payment.remainingBalance;
-  }, 0);
+  const totalPaid = studentPayments
+    .filter(payment => payment.academicYear === currentAcademicYear && payment.status === "payé")
+    .reduce((sum, payment) => sum + payment.amount, 0);
+  
+  // Obtenir le dernier paiement pour connaître le solde restant
+  const sortedPayments = [...studentPayments]
+    .filter(payment => payment.academicYear === currentAcademicYear)
+    .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+  
+  // Calculer le total dû (solde restant du dernier paiement)
+  const totalDue = sortedPayments.length > 0 ? sortedPayments[0].remainingBalance : 0;
   
   // Déterminer si l'étudiant a des paiements en retard
   const hasLatePayments = studentPayments.some(payment => payment.status === "retard");
   
   // Obtenir le dernier paiement
-  const lastPayment = studentPayments.length > 0 
-    ? studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())[0]
-    : null;
+  const lastPayment = sortedPayments.length > 0 ? sortedPayments[0] : null;
+  
+  // Déterminer si le compte est soldé
+  const isAccountSettled = totalDue === 0 && totalPaid > 0;
   
   return {
     studentPayments,
@@ -41,6 +44,7 @@ export function useStudentPayments(studentId: string) {
     totalDue,
     hasLatePayments,
     lastPayment,
+    isAccountSettled,
     isLoading,
     error
   };

@@ -20,6 +20,12 @@ export const feesService = {
           name: "Paiement trimestriel",
           description: "Paiement des frais en trois versements trimestriels",
           instalments: 3
+        },
+        {
+          id: "plan-3",
+          name: "Paiement flexible",
+          description: "Paiements multiples sans plan prédéfini",
+          instalments: 0
         }
       ];
       
@@ -96,6 +102,30 @@ export const feesService = {
     
     await db.table('receipts').add(newReceipt);
     return newReceipt;
+  },
+  
+  // Calcule le total des frais pour un étudiant
+  calculateTotalFees: async (studentId: string, academicYear: string): Promise<number> => {
+    // Récupérer tous les paiements de l'étudiant pour cette année académique
+    const receipts = await db.table('receipts')
+      .filter(r => r.studentId === studentId && r.academicYear === academicYear)
+      .toArray();
+    
+    // Calculer le total payé
+    const totalPaid = receipts.reduce((sum, r) => sum + r.amount, 0);
+    
+    // Si aucun paiement, retourner 0
+    if (receipts.length === 0) {
+      return 0;
+    }
+    
+    // Récupérer le dernier paiement pour obtenir le montant total des frais
+    const lastReceipt = receipts.sort((a, b) => 
+      new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+    )[0];
+    
+    // Total des frais = montant payé + solde restant
+    return totalPaid + lastReceipt.remainingBalance;
   },
   
   // Génère un numéro de reçu unique

@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -45,6 +46,7 @@ export const PaymentReceipt = ({ open, onOpenChange, receipt }: PaymentReceiptPr
                 .receipt-data { text-align: right; }
                 .receipt-total { border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; font-weight: bold; }
                 .receipt-footer { margin-top: 40px; text-align: center; font-size: 14px; color: #666; }
+                .payment-complete { display: inline-block; margin-top: 10px; background: #d1fae5; color: #065f46; padding: 5px 10px; border-radius: 4px; font-weight: bold; }
               </style>
             </head>
             <body>
@@ -116,11 +118,18 @@ export const PaymentReceipt = ({ open, onOpenChange, receipt }: PaymentReceiptPr
               <span className="receipt-label">Montant payé:</span>
               <span className="receipt-data">{formatCurrency(receipt.amount)}</span>
             </div>
-            {receipt.remainingBalance > 0 && (
+            
+            {receipt.remainingBalance > 0 ? (
               <div className="receipt-row mt-2">
                 <span className="receipt-label">Solde restant:</span>
                 <span className="receipt-data text-amber-600">{formatCurrency(receipt.remainingBalance)}</span>
               </div>
+            ) : (
+              receipt.isFullPayment && (
+                <div className="text-center mt-4">
+                  <span className="payment-complete">Compte soldé</span>
+                </div>
+              )
             )}
           </div>
           

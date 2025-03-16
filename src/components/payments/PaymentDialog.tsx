@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { useStudentsData } from "@/hooks/useStudentsData";
 import { useFeesData } from "@/hooks/useFeesData";
 import { PaymentReceipt } from "@/types/fees";
+import { useStudentPayments } from "@/hooks/useStudentPayments";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -34,13 +35,18 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
   const [method, setMethod] = useState(payment?.paymentMethod || "espèces");
   const [date, setDate] = useState(payment?.paymentDate || new Date().toISOString().split('T')[0]);
   const [academicYear, setAcademicYear] = useState(payment?.academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
-  const [paymentPlanId, setPaymentPlanId] = useState(payment?.paymentPlanId || "plan-1");
+  const [paymentPlanId, setPaymentPlanId] = useState(payment?.paymentPlanId || "plan-3"); // Par défaut: paiement flexible
   const [termNumber, setTermNumber] = useState(payment?.termNumber?.toString() || "1");
   const [remainingBalance, setRemainingBalance] = useState(payment?.remainingBalance || 0);
+  const [totalFeesAmount, setTotalFeesAmount] = useState(0);
+  const [isFullPayment, setIsFullPayment] = useState(false);
 
   // État pour suivre les frais de la classe sélectionnée
   const [selectedClassFees, setSelectedClassFees] = useState<any>(null);
 
+  // Obtenir les paiements précédents de l'étudiant (si un étudiant est sélectionné)
+  const { studentPayments, totalPaid, totalDue } = useStudentPayments(studentId);
+  
   // Réinitialiser les valeurs à l'ouverture de la boîte de dialogue
   useEffect(() => {
     if (open) {
@@ -55,10 +61,12 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
       setMethod(payment?.paymentMethod || "espèces");
       setDate(payment?.paymentDate || new Date().toISOString().split('T')[0]);
       setAcademicYear(payment?.academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
-      setPaymentPlanId(payment?.paymentPlanId || "plan-1");
+      setPaymentPlanId(payment?.paymentPlanId || "plan-3");
       setTermNumber(payment?.termNumber?.toString() || "1");
       setRemainingBalance(payment?.remainingBalance || 0);
       setSelectedClassFees(null);
+      setTotalFeesAmount(0);
+      setIsFullPayment(false);
     }
   }, [open, payment]);
 
@@ -75,15 +83,24 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
         if (fees) {
           setSelectedClassFees(fees);
           
-          // Définir le montant en fonction du plan de paiement
-          const plan = paymentPlans.find(p => p.id === paymentPlanId);
-          if (plan) {
-            if (plan.instalments === 1) {
-              // Paiement intégral
-              setOriginalAmount(fees.yearlyAmount);
-            } else if (plan.instalments === 3) {
-              // Paiement trimestriel
-              setOriginalAmount(fees.termAmount);
+          // Pour les paiements flexibles, utiliser le montant annuel comme base
+          if (paymentPlanId === "plan-3") {
+            setOriginalAmount(fees.yearlyAmount);
+            setTotalFeesAmount(fees.yearlyAmount);
+          }
+          // Pour les autres plans de paiement
+          else {
+            const plan = paymentPlans.find(p => p.id === paymentPlanId);
+            if (plan) {
+              if (plan.instalments === 1) {
+                // Paiement intégral
+                setOriginalAmount(fees.yearlyAmount);
+                setTotalFeesAmount(fees.yearlyAmount);
+              } else if (plan.instalments === 3) {
+                // Paiement trimestriel
+                setOriginalAmount(fees.termAmount);
+                setTotalFeesAmount(fees.yearlyAmount);
+              }
             }
           }
         }
@@ -91,33 +108,55 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
     }
   }, [studentId, students, classFees, paymentPlanId, paymentPlans]);
 
+  // Mettre à jour le solde restant lorsque le montant change
+  useEffect(() => {
+    const amountNum = parseFloat(amount.replace(/\s/g, "")) || 0;
+    
+    // Pour les paiements flexibles, calculer le solde restant en fonction du total des frais
+    if (paymentPlanId === "plan-3" && totalFeesAmount > 0) {
+      // Calculer le solde restant après ce paiement
+      const newRemainingBalance = Math.max(0, totalFeesAmount - (totalPaid + amountNum));
+      setRemainingBalance(newRemainingBalance);
+      setIsFullPayment(newRemainingBalance === 0);
+    }
+    // Pour les autres plans
+    else {
+      // Calculer selon la logique existante
+      const plan = paymentPlans.find(p => p.id === paymentPlanId);
+      if (plan?.instalments === 1) {
+        // Paiement intégral - pas de solde restant
+        setRemainingBalance(0);
+        setIsFullPayment(true);
+      } else if (plan?.instalments === 3 && selectedClassFees) {
+        // Pour un paiement trimestriel, calculer le solde pour les trimestres suivants
+        const termCount = parseInt(termNumber || "1");
+        const termsRemaining = 3 - termCount;
+        if (termsRemaining > 0) {
+          setRemainingBalance(selectedClassFees.termAmount * termsRemaining);
+          setIsFullPayment(false);
+        } else {
+          setRemainingBalance(0);
+          setIsFullPayment(true);
+        }
+      }
+    }
+  }, [amount, paymentPlanId, totalFeesAmount, totalPaid, termNumber, selectedClassFees, paymentPlans]);
+
   // Mettre à jour le montant final en fonction de la réduction
   useEffect(() => {
     const discountAmount = originalAmount * (discountPercentage / 100);
     const final = originalAmount - discountAmount;
     setFinalAmount(final);
     
-    // Si c'est un paiement intégral, le montant est le montant final
-    const plan = paymentPlans.find(p => p.id === paymentPlanId);
-    if (plan?.instalments === 1) {
-      setAmount(final.toString());
-      setRemainingBalance(0);
-    } else if (plan?.instalments === 3) {
-      // Pour un paiement trimestriel, le montant par défaut est le montant du trimestre
-      setAmount(final.toString());
-      
-      // Calculer le solde restant (pour les trimestres suivants)
-      if (selectedClassFees) {
-        const termCount = parseInt(termNumber || "1");
-        const termsRemaining = 3 - termCount;
-        if (termsRemaining > 0) {
-          setRemainingBalance(selectedClassFees.termAmount * termsRemaining);
-        } else {
-          setRemainingBalance(0);
-        }
+    // Si c'est un paiement flexible, le montant n'est pas automatiquement assigné
+    if (paymentPlanId !== "plan-3") {
+      // Pour les autres types de paiement, suivre la logique existante
+      const plan = paymentPlans.find(p => p.id === paymentPlanId);
+      if (plan?.instalments === 1 || plan?.instalments === 3) {
+        setAmount(final.toString());
       }
     }
-  }, [originalAmount, discountPercentage, paymentPlanId, termNumber, paymentPlans, selectedClassFees]);
+  }, [originalAmount, discountPercentage, paymentPlanId, paymentPlans]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,8 +206,9 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
       paymentMethod: method,
       academicYear,
       paymentPlanId,
-      termNumber: termNumber ? parseInt(termNumber) : undefined,
-      remainingBalance
+      termNumber: termNumber && paymentPlanId === "plan-2" ? parseInt(termNumber) : undefined,
+      remainingBalance,
+      isFullPayment
     });
 
     onOpenChange(false);
@@ -204,12 +244,25 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
             </Select>
           </div>
           
+          {studentId && studentPayments.length > 0 && (
+            <div className="grid gap-2 bg-muted p-3 rounded-md">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Total déjà payé:</span>
+                <span>{formatCurrency(totalPaid)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Reste à payer:</span>
+                <span>{formatCurrency(totalDue)}</span>
+              </div>
+            </div>
+          )}
+          
           <div className="grid gap-2">
             <Label htmlFor="paymentPlan">Plan de paiement</Label>
             <Select 
               value={paymentPlanId} 
               onValueChange={setPaymentPlanId}
-              defaultValue="plan-1"
+              defaultValue="plan-3"
             >
               <SelectTrigger id="paymentPlan">
                 <SelectValue placeholder="Sélectionner un plan" />
@@ -354,6 +407,18 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
               onChange={(e) => setAcademicYear(e.target.value)}
               placeholder="ex: 2023-2024" 
             />
+          </div>
+          
+          <div className="grid gap-2 bg-amber-50 p-3 rounded-md border border-amber-200">
+            <div className="flex justify-between items-center font-semibold">
+              <span>Solde restant après ce paiement:</span>
+              <span className={remainingBalance === 0 ? "text-green-600" : "text-amber-600"}>
+                {formatCurrency(remainingBalance)}
+              </span>
+            </div>
+            {remainingBalance === 0 && (
+              <p className="text-sm text-green-600">Ce paiement soldera le compte de l'étudiant.</p>
+            )}
           </div>
           
           <DialogFooter>

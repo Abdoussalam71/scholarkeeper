@@ -11,9 +11,9 @@ export interface ClassFees {
 
 export interface PaymentPlan {
   id: string;
-  name: "Paiement intégral" | "Paiement trimestriel";
+  name: "Paiement intégral" | "Paiement trimestriel" | "Paiement flexible";
   description: string;
-  instalments: number; // 1 pour intégral, 3 pour trimestriel
+  instalments: number; // 1 pour intégral, 3 pour trimestriel, 0 pour flexible
 }
 
 export interface PaymentReceipt {
@@ -34,4 +34,5 @@ export interface PaymentReceipt {
   originalAmount: number;
   finalAmount: number;
   status: "payé" | "en attente" | "retard";
+  isFullPayment: boolean; // Indique si le paiement a soldé le compte
 }
