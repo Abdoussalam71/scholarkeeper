@@ -4,32 +4,18 @@ import { ClassFees, PaymentPlan, PaymentReceipt } from '@/types/fees';
 
 export const feesService = {
   initDatabase: async () => {
-    // Initialiser les plans de paiement s'ils n'existent pas
+    // Initialiser le plan de paiement flexible s'il n'existe pas
     const plansCount = await db.table('paymentPlans').count();
     
     if (plansCount === 0) {
-      const defaultPlans: PaymentPlan[] = [
-        {
-          id: "plan-1",
-          name: "Paiement intégral",
-          description: "Paiement de tous les frais en une seule fois",
-          instalments: 1
-        },
-        {
-          id: "plan-2",
-          name: "Paiement trimestriel",
-          description: "Paiement des frais en trois versements trimestriels",
-          instalments: 3
-        },
-        {
-          id: "plan-3",
-          name: "Paiement flexible",
-          description: "Paiements multiples sans plan prédéfini",
-          instalments: 0
-        }
-      ];
+      const flexiblePlan: PaymentPlan = {
+        id: "plan-flexible",
+        name: "Paiement flexible",
+        description: "Paiements multiples sans plan prédéfini",
+        instalments: 0
+      };
       
-      await db.table('paymentPlans').bulkAdd(defaultPlans);
+      await db.table('paymentPlans').add(flexiblePlan);
     }
   },
   
@@ -102,6 +88,17 @@ export const feesService = {
     
     await db.table('receipts').add(newReceipt);
     return newReceipt;
+  },
+  
+  updateReceipt: async (id: string, receipt: Partial<PaymentReceipt>): Promise<PaymentReceipt | undefined> => {
+    await db.table('receipts').update(id, receipt);
+    return await db.table('receipts').get(id);
+  },
+  
+  // Mettre à jour uniquement le statut d'un paiement
+  updateReceiptStatus: async (id: string, status: PaymentReceipt["status"]): Promise<PaymentReceipt | undefined> => {
+    await db.table('receipts').update(id, { status });
+    return await db.table('receipts').get(id);
   },
   
   // Calcule le total des frais pour un étudiant

@@ -81,9 +81,24 @@ export function useFeesData() {
     onSuccess: () => {
       toast.success("Paiement enregistré avec succès");
       queryClient.invalidateQueries({ queryKey: ["receipts"] });
+      queryClient.invalidateQueries({ queryKey: ["studentPayments"] });
     },
     onError: () => {
       toast.error("Erreur lors de l'enregistrement du paiement");
+    }
+  });
+  
+  // Update payment status mutation
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: PaymentReceipt["status"] }) => 
+      feesService.updateReceiptStatus(id, status),
+    onSuccess: () => {
+      toast.success("Statut du paiement mis à jour avec succès");
+      queryClient.invalidateQueries({ queryKey: ["receipts"] });
+      queryClient.invalidateQueries({ queryKey: ["studentPayments"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour du statut du paiement");
     }
   });
   
@@ -113,6 +128,8 @@ export function useFeesData() {
     deleteClassFees: (id: string) => deleteClassFeesMutation.mutate(id),
     addReceipt: (data: Omit<PaymentReceipt, "id" | "receiptNumber" | "transactionId">) => 
       addReceiptMutation.mutate(data),
+    updatePaymentStatus: (id: string, status: PaymentReceipt["status"]) => 
+      updatePaymentStatusMutation.mutate({ id, status }),
     getReceiptsByStudentId
   };
 }

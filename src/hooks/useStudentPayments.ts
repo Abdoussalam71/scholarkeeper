@@ -32,17 +32,25 @@ export function useStudentPayments(studentId: string) {
   // Déterminer si l'étudiant a des paiements en retard
   const hasLatePayments = studentPayments.some(payment => payment.status === "retard");
   
+  // Déterminer si l'étudiant a des paiements en attente
+  const hasPendingPayments = studentPayments.some(payment => payment.status === "en attente");
+  
   // Obtenir le dernier paiement
   const lastPayment = sortedPayments.length > 0 ? sortedPayments[0] : null;
   
   // Déterminer si le compte est soldé
   const isAccountSettled = totalDue === 0 && totalPaid > 0;
   
+  // Récupérer tous les paiements en attente
+  const pendingPayments = studentPayments.filter(payment => payment.status === "en attente");
+  
   return {
     studentPayments,
     totalPaid,
     totalDue,
     hasLatePayments,
+    hasPendingPayments,
+    pendingPayments,
     lastPayment,
     isAccountSettled,
     isLoading,

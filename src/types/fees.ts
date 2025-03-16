@@ -11,9 +11,9 @@ export interface ClassFees {
 
 export interface PaymentPlan {
   id: string;
-  name: "Paiement intégral" | "Paiement trimestriel" | "Paiement flexible";
+  name: "Paiement flexible";
   description: string;
-  instalments: number; // 1 pour intégral, 3 pour trimestriel, 0 pour flexible
+  instalments: number; // 0 pour flexible
 }
 
 export interface PaymentReceipt {
@@ -29,7 +29,6 @@ export interface PaymentReceipt {
   academicYear: string;
   receiptNumber: string;
   paymentPlanId: string;
-  termNumber?: number; // Pour les paiements trimestriels
   discountPercentage: number;
   originalAmount: number;
   finalAmount: number;

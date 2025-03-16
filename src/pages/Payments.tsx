@@ -9,7 +9,9 @@ import {
   Search, 
   Receipt,
   PiggyBank,
-  School
+  School,
+  Check,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,10 +38,10 @@ import {
 import AppLayout from "@/components/layout/AppLayout";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PaymentDialog } from "@/components/payments/PaymentDialog";
-import { ClassFeesDialog } from "@/components/fees/ClassFeesDialog";
 import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
 import { useFeesData } from "@/hooks/useFeesData";
 import { useStudentsData } from "@/hooks/useStudentsData";
+import { toast } from "sonner";
 
 const PaymentsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,7 +61,7 @@ const PaymentsPage = () => {
   const [selectedFees, setSelectedFees] = useState<any | null>(null);
   
   // Hooks pour les données
-  const { classFees, allReceipts, addClassFees, updateClassFees, deleteClassFees, addReceipt } = useFeesData();
+  const { classFees, allReceipts, addClassFees, updateClassFees, deleteClassFees, addReceipt, updatePaymentStatus } = useFeesData();
   const { students } = useStudentsData();
   
   // Filtrer les paiements en fonction du terme de recherche et de l'onglet actif
@@ -127,6 +129,12 @@ const PaymentsPage = () => {
   const handleDeletePayment = () => {
     // Cette fonctionnalité serait implémentée si nous avions un service pour supprimer les reçus
     console.log("Deleted payment:", selectedPayment);
+  };
+
+  // Gestionnaire pour valider un paiement en attente
+  const handleValidatePayment = (receipt: any) => {
+    updatePaymentStatus(receipt.id, "payé");
+    toast.success(`Paiement ${receipt.receiptNumber} validé avec succès`);
   };
 
   // Gestionnaires d'événements pour les frais de scolarité
@@ -212,7 +220,7 @@ const PaymentsPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{formatCurrency(totalPending)}</div>
-                <p className="text-xs text-amber-600 mt-1">Paiements à venir</p>
+                <p className="text-xs text-amber-600 mt-1">Paiements à valider</p>
               </CardContent>
             </Card>
             
@@ -308,6 +316,17 @@ const PaymentsPage = () => {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
+                                  {receipt.status === "en attente" && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+                                      onClick={() => handleValidatePayment(receipt)}
+                                    >
+                                      <Check className="h-4 w-4 mr-1" />
+                                      Valider
+                                    </Button>
+                                  )}
                                   <Button variant="outline" size="sm" onClick={() => handleViewReceipt(receipt)}>
                                     Voir reçu
                                   </Button>
@@ -421,6 +440,15 @@ const PaymentsPage = () => {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+                                    onClick={() => handleValidatePayment(receipt)}
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Valider
+                                  </Button>
                                   <Button variant="outline" size="sm" onClick={() => handleViewReceipt(receipt)}>
                                     Voir reçu
                                   </Button>
@@ -477,6 +505,15 @@ const PaymentsPage = () => {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+                                    onClick={() => handleValidatePayment(receipt)}
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Valider
+                                  </Button>
                                   <Button variant="outline" size="sm" onClick={() => handleViewReceipt(receipt)}>
                                     Voir reçu
                                   </Button>
