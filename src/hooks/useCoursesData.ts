@@ -52,7 +52,7 @@ export function useCoursesData() {
     onError: (error) => {
       toast("Erreur", {
         description: "Impossible d'ajouter le cours",
-        variant: "destructive",
+        // Remove the 'variant' property as it doesn't exist in ExternalToast type
       });
     }
   });
@@ -70,7 +70,7 @@ export function useCoursesData() {
     onError: (error) => {
       toast("Erreur", {
         description: "Impossible de mettre à jour le cours",
-        variant: "destructive",
+        // Remove the 'variant' property as it doesn't exist in ExternalToast type
       });
     }
   });
@@ -87,7 +87,7 @@ export function useCoursesData() {
     onError: (error) => {
       toast("Erreur", {
         description: "Impossible de supprimer le cours",
-        variant: "destructive",
+        // Remove the 'variant' property as it doesn't exist in ExternalToast type
       });
     }
   });
