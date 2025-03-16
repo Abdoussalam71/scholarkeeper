@@ -1,134 +1,114 @@
 
-import { useState, useEffect } from 'react';
-import { courseService } from '@/services/database';
-import { CourseData } from '@/types/courses';
-import { toast } from '@/components/ui/use-toast';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { courseService } from "@/services/db/courseService";
+import { Course } from "@/types/courses";
+import { toast } from "sonner";
 
-export const useCoursesData = (initialSearchTerm: string = '') => {
-  const [courses, setCourses] = useState<CourseData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
-  
-  // Initialiser la base de données au démarrage
-  useEffect(() => {
-    const initDb = async () => {
-      try {
-        // Initialiser la base de données
-        await courseService.initDatabase();
-        loadCourses();
-      } catch (error) {
-        console.error('Erreur lors de l\'initialisation de la base de données:', error);
-        toast({
-          title: "Erreur de base de données",
-          description: "Impossible de charger la base de données",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-      }
-    };
-    
-    initDb();
-  }, []);
-  
-  // Charger les cours en fonction du terme de recherche
-  useEffect(() => {
-    loadCourses();
-  }, [searchTerm]);
-  
-  const loadCourses = async () => {
-    setIsLoading(true);
-    try {
-      let loadedCourses;
-      if (searchTerm) {
-        loadedCourses = await courseService.searchCourses(searchTerm);
-      } else {
-        loadedCourses = await courseService.getAllCourses();
-      }
-      setCourses(loadedCourses);
-    } catch (error) {
-      console.error('Erreur lors du chargement des cours:', error);
+export function useCoursesData() {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Initialiser la base de données au premier chargement
+  useQuery({
+    queryKey: ["coursesInit"],
+    queryFn: async () => {
+      await courseService.initDatabase();
+      return true;
+    },
+    staleTime: Infinity
+  });
+
+  // Récupérer tous les cours
+  const { 
+    data: allCourses = [], 
+    isLoading,
+    error,
+    refetch: refreshCourses
+  } = useQuery({
+    queryKey: ["courses"],
+    queryFn: () => courseService.getAllCourses()
+  });
+
+  // Filtrer les cours basés sur le terme de recherche
+  const courses = searchTerm
+    ? allCourses.filter(course =>
+        course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.teacherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (course.className && course.className.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    : allCourses;
+
+  // Ajouter un cours
+  const addCourseMutation = useMutation({
+    mutationFn: (course: Omit<Course, "id">) => courseService.addCourse(course),
+    onSuccess: () => {
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les cours",
-        variant: "destructive"
+        title: "Cours ajouté",
+        description: "Le cours a été ajouté avec succès",
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const addCourse = async (course: Omit<CourseData, 'id'>) => {
-    try {
-      const newCourse = await courseService.addCourse(course);
-      setCourses(prevCourses => [...prevCourses, newCourse]);
-      toast({
-        title: "Succès",
-        description: "Cours ajouté avec succès",
-      });
-      return newCourse;
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout du cours:', error);
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (error) => {
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter le cours",
-        variant: "destructive"
+        variant: "destructive",
       });
-      throw error;
     }
-  };
-  
-  const updateCourse = async (course: CourseData) => {
-    try {
-      const updatedCourse = await courseService.updateCourse(course);
-      setCourses(prevCourses => 
-        prevCourses.map(c => c.id === course.id ? updatedCourse : c)
-      );
+  });
+
+  // Mettre à jour un cours
+  const updateCourseMutation = useMutation({
+    mutationFn: ({ id, course }: { id: string, course: Partial<Course> }) => 
+      courseService.updateCourse(id, course),
+    onSuccess: () => {
       toast({
-        title: "Succès",
-        description: "Cours mis à jour avec succès",
+        title: "Cours mis à jour",
+        description: "Le cours a été mis à jour avec succès",
       });
-      return updatedCourse;
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du cours:', error);
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (error) => {
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour le cours",
-        variant: "destructive"
+        variant: "destructive",
       });
-      throw error;
     }
-  };
-  
-  const deleteCourse = async (id: string) => {
-    try {
-      const success = await courseService.deleteCourse(id);
-      if (success) {
-        setCourses(prevCourses => prevCourses.filter(c => c.id !== id));
-        toast({
-          title: "Succès",
-          description: "Cours supprimé avec succès",
-        });
-      }
-      return success;
-    } catch (error) {
-      console.error('Erreur lors de la suppression du cours:', error);
+  });
+
+  // Supprimer un cours
+  const deleteCourseMutation = useMutation({
+    mutationFn: (id: string) => courseService.deleteCourse(id),
+    onSuccess: () => {
+      toast({
+        title: "Cours supprimé",
+        description: "Le cours a été supprimé avec succès",
+      });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (error) => {
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le cours",
-        variant: "destructive"
+        variant: "destructive",
       });
-      throw error;
     }
-  };
-  
+  });
+
   return {
     courses,
+    allCourses,
     isLoading,
+    error,
     searchTerm,
     setSearchTerm,
-    addCourse,
-    updateCourse,
-    deleteCourse,
-    refreshCourses: loadCourses
+    addCourse: (course: Omit<Course, "id">) => addCourseMutation.mutate(course),
+    updateCourse: (id: string, course: Partial<Course>) => 
+      updateCourseMutation.mutate({ id, course }),
+    deleteCourse: (id: string) => deleteCourseMutation.mutate(id),
+    refreshCourses
   };
-};
+}

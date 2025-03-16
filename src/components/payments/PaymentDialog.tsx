@@ -87,22 +87,22 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
 
   // Mettre à jour le solde restant lorsque le montant change
   useEffect(() => {
+    if (!studentId || !totalFeesAmount) return;
+    
     const amountNum = parseFloat(amount.replace(/\s/g, "")) || 0;
     
-    if (totalFeesAmount > 0) {
-      // Calculer le solde restant après ce paiement
-      const newRemainingBalance = Math.max(0, totalFeesAmount - (totalPaid + amountNum));
-      setRemainingBalance(newRemainingBalance);
-      setIsFullPayment(newRemainingBalance === 0);
-    }
-  }, [amount, totalFeesAmount, totalPaid]);
-
-  // Mettre à jour le montant final en fonction de la réduction
-  useEffect(() => {
-    const discountAmount = originalAmount * (discountPercentage / 100);
-    const final = originalAmount - discountAmount;
-    setFinalAmount(final);
-  }, [originalAmount, discountPercentage]);
+    // Calculer le montant total dû avec réduction
+    const discountAmount = totalFeesAmount * (discountPercentage / 100);
+    const discountedTotal = totalFeesAmount - discountAmount;
+    
+    // Calculer le solde restant après ce paiement
+    const newRemainingBalance = Math.max(0, discountedTotal - (totalPaid + amountNum));
+    setRemainingBalance(newRemainingBalance);
+    setIsFullPayment(newRemainingBalance === 0);
+    
+    // Mettre à jour le montant final
+    setFinalAmount(discountedTotal);
+  }, [amount, totalFeesAmount, totalPaid, discountPercentage, studentId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +134,7 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
       studentName: student.name,
       className: student.class,
       amount: amountNum,
-      originalAmount,
+      originalAmount: totalFeesAmount,
       discountPercentage,
       finalAmount,
       status,
@@ -224,11 +224,11 @@ export const PaymentDialog = ({ open, onOpenChange, payment, onSave, title }: Pa
           <div className="grid gap-2 bg-muted p-3 rounded-md">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Montant original:</span>
-              <span>{formatCurrency(originalAmount)}</span>
+              <span>{formatCurrency(totalFeesAmount)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Réduction:</span>
-              <span>-{formatCurrency((originalAmount * discountPercentage) / 100)}</span>
+              <span>-{formatCurrency((totalFeesAmount * discountPercentage) / 100)}</span>
             </div>
             <div className="flex justify-between items-center font-semibold">
               <span>Montant final:</span>

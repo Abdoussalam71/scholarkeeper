@@ -1,109 +1,145 @@
 
 import db from './database';
-import { CourseData } from '@/types/courses';
+import { Course, CourseSession, CourseMaterial } from '@/types/courses';
 
 export const courseService = {
   initDatabase: async () => {
-    const count = await db.courses.count();
+    const count = await db.table('courses').count();
     
-    // Si pas de données, insérer des exemples
     if (count === 0) {
-      const sampleCourses = [
+      const sampleCourses: Course[] = [
         {
           id: "1",
-          name: "Mathématiques Avancées",
-          description: "Cours de mathématiques pour niveau avancé",
+          name: "Mathématiques",
+          description: "Cours de mathématiques avancées",
           teacherId: "1",
-          teacherName: "Jean Dupont",
-          schedule: "Lundi 10:00 - 12:00",
-          duration: "2 heures",
-          maxStudents: 25,
-          currentStudents: 18
+          teacherName: "Prof. Martin",
+          className: "Terminale S",
+          schedule: "Lundi et Mercredi, 10:00-12:00",
+          duration: "2h",
+          maxStudents: 30,
+          currentStudents: 22,
+          academicYear: "2023-2024",
+          status: "active"
         },
         {
           id: "2",
-          name: "Physique Fondamentale",
-          description: "Introduction aux concepts de base de la physique",
+          name: "Physique-Chimie",
+          description: "Cours de physique et chimie",
           teacherId: "2",
-          teacherName: "Marie Lambert",
-          schedule: "Mardi 14:00 - 16:00",
-          duration: "2 heures",
-          maxStudents: 30,
-          currentStudents: 22
+          teacherName: "Dr. Dupont",
+          className: "Première S",
+          schedule: "Mardi et Jeudi, 14:00-16:00",
+          duration: "2h",
+          maxStudents: 25,
+          currentStudents: 20,
+          academicYear: "2023-2024",
+          status: "active"
         },
         {
           id: "3",
-          name: "Littérature Française",
-          description: "Étude des grands auteurs français",
+          name: "Histoire-Géographie",
+          description: "Cours d'histoire et géographie",
           teacherId: "3",
-          teacherName: "Sophie Martin",
-          schedule: "Mercredi 9:00 - 11:00",
-          duration: "2 heures",
-          maxStudents: 20,
-          currentStudents: 15
-        },
-        {
-          id: "4",
-          name: "Anglais Intermédiaire",
-          description: "Perfectionnement en anglais pour niveau intermédiaire",
-          teacherId: "4",
-          teacherName: "Pierre Leclerc",
-          schedule: "Jeudi 13:00 - 15:00",
-          duration: "2 heures",
-          maxStudents: 15,
-          currentStudents: 12
-        },
-        {
-          id: "5",
-          name: "Programmation Informatique",
-          description: "Introduction à la programmation et algorithmes",
-          teacherId: "5",
-          teacherName: "Thomas Petit",
-          schedule: "Vendredi 10:00 - 13:00",
-          duration: "3 heures",
-          maxStudents: 20,
-          currentStudents: 19
+          teacherName: "Mme. Lambert",
+          className: "Seconde A",
+          schedule: "Vendredi, 08:00-10:00",
+          duration: "2h",
+          maxStudents: 28,
+          currentStudents: 25,
+          academicYear: "2023-2024",
+          status: "active"
         }
       ];
       
-      await db.courses.bulkAdd(sampleCourses);
+      await db.table('courses').bulkAdd(sampleCourses);
     }
   },
   
-  getAllCourses: async (): Promise<CourseData[]> => {
-    return await db.courses.toArray();
+  getAllCourses: async (): Promise<Course[]> => {
+    return await db.table('courses').toArray();
   },
   
-  searchCourses: async (searchTerm: string): Promise<CourseData[]> => {
+  getCourseById: async (id: string): Promise<Course | undefined> => {
+    return await db.table('courses').get(id);
+  },
+  
+  searchCourses: async (searchTerm: string): Promise<Course[]> => {
     searchTerm = searchTerm.toLowerCase();
-    return await db.courses
+    return await db.table('courses')
       .filter(course => 
         course.name.toLowerCase().includes(searchTerm) || 
+        course.description.toLowerCase().includes(searchTerm) ||
         course.teacherName.toLowerCase().includes(searchTerm) ||
-        course.description.toLowerCase().includes(searchTerm)
+        (course.className && course.className.toLowerCase().includes(searchTerm))
       )
       .toArray();
   },
   
-  getCourseById: async (id: string): Promise<CourseData | undefined> => {
-    return await db.courses.get(id);
-  },
-  
-  addCourse: async (course: Omit<CourseData, 'id'>): Promise<CourseData> => {
+  addCourse: async (course: Omit<Course, "id">): Promise<Course> => {
     const id = Math.random().toString(36).substring(2, 9);
     const newCourse = { id, ...course };
     
-    await db.courses.add(newCourse);
+    await db.table('courses').add(newCourse);
     return newCourse;
   },
   
-  updateCourse: async (course: CourseData): Promise<CourseData> => {
-    await db.courses.update(course.id, course);
-    return course;
+  updateCourse: async (id: string, course: Partial<Course>): Promise<Course | undefined> => {
+    await db.table('courses').update(id, course);
+    return await db.table('courses').get(id);
   },
   
   deleteCourse: async (id: string): Promise<boolean> => {
-    await db.courses.delete(id);
+    await db.table('courses').delete(id);
+    
+    // Supprimer également les sessions et matériaux associés
+    await db.table('courseSessions').where({ courseId: id }).delete();
+    await db.table('courseMaterials').where({ courseId: id }).delete();
+    
     return true;
+  },
+  
+  getCoursesByTeacherId: async (teacherId: string): Promise<Course[]> => {
+    return await db.table('courses')
+      .where({ teacherId })
+      .toArray();
+  },
+  
+  getCoursesByClassName: async (className: string): Promise<Course[]> => {
+    return await db.table('courses')
+      .where({ className })
+      .toArray();
+  },
+  
+  // Gestion des sessions de cours
+  
+  getCourseSessionsByCourseId: async (courseId: string): Promise<CourseSession[]> => {
+    return await db.table('courseSessions')
+      .where({ courseId })
+      .toArray();
+  },
+  
+  addCourseSession: async (session: Omit<CourseSession, "id">): Promise<CourseSession> => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const newSession = { id, ...session };
+    
+    await db.table('courseSessions').add(newSession);
+    return newSession;
+  },
+  
+  // Gestion des matériaux de cours
+  
+  getCourseMaterialsByCourseId: async (courseId: string): Promise<CourseMaterial[]> => {
+    return await db.table('courseMaterials')
+      .where({ courseId })
+      .toArray();
+  },
+  
+  addCourseMaterial: async (material: Omit<CourseMaterial & { courseId: string }, "id">): Promise<CourseMaterial> => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const newMaterial = { id, ...material };
+    
+    await db.table('courseMaterials').add(newMaterial);
+    return newMaterial;
   }
 };
