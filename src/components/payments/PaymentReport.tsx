@@ -67,8 +67,8 @@ export const PaymentReport = () => {
   
   // Gérer l'impression
   const handlePrint = useReactToPrint({
-    documentTitle: "Rapport des paiements impayés",
-    content: () => printRef.current,
+    documentTitle: "Rapport des paiements impayés"
+    // On supprime la propriété content qui n'est pas reconnue dans le type UseReactToPrintOptions
   });
   
   // Gérer le téléchargement CSV
@@ -134,7 +134,7 @@ export const PaymentReport = () => {
                   <SelectValue placeholder="Filtrer par classe" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={undefined}>Toutes les classes</SelectItem>
+                  <SelectItem value="all">Toutes les classes</SelectItem>
                   {uniqueClasses.map(classItem => {
                     // Using student.class directly since we've updated the mapping
                     const className = students.find(s => s.class === classItem)?.class || "Non assigné";
@@ -149,7 +149,14 @@ export const PaymentReport = () => {
             </div>
           </div>
           
-          <Button variant="outline" onClick={() => handlePrint()}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              if (printRef.current) {
+                handlePrint(printRef.current);
+              }
+            }}
+          >
             <Printer className="mr-2 h-4 w-4" />
             Imprimer
           </Button>
