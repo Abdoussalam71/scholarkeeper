@@ -71,6 +71,8 @@ export const CourseDialog = ({ open, onOpenChange, course, onSave, title }: Cour
       if (classObj) {
         setClassName(classObj.name);
       }
+    } else {
+      setClassName("");
     }
   }, [classId, classes]);
   
@@ -145,7 +147,7 @@ export const CourseDialog = ({ open, onOpenChange, course, onSave, title }: Cour
           
           <div className="grid gap-2">
             <Label htmlFor="teacher">Enseignant</Label>
-            <Select value={teacherId} onValueChange={setTeacherId} defaultValue="">
+            <Select value={teacherId} onValueChange={setTeacherId}>
               <SelectTrigger id="teacher">
                 <SelectValue placeholder="Sélectionner un enseignant" />
               </SelectTrigger>
@@ -161,12 +163,12 @@ export const CourseDialog = ({ open, onOpenChange, course, onSave, title }: Cour
           
           <div className="grid gap-2">
             <Label htmlFor="class">Classe (optionnel)</Label>
-            <Select value={classId || ""} onValueChange={setClassId} defaultValue="">
+            <Select value={classId || ""} onValueChange={setClassId}>
               <SelectTrigger id="class">
                 <SelectValue placeholder="Sélectionner une classe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucune classe</SelectItem>
+                <SelectItem value="_none_">Aucune classe</SelectItem>
                 {classes.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>
                     {cls.name}
@@ -235,7 +237,6 @@ export const CourseDialog = ({ open, onOpenChange, course, onSave, title }: Cour
             <Select 
               value={status} 
               onValueChange={(value) => setStatus(value as Course["status"])}
-              defaultValue="active"
             >
               <SelectTrigger id="status">
                 <SelectValue placeholder="Sélectionner un statut" />
