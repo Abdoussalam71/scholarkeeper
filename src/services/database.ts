@@ -5,6 +5,7 @@ import { scheduleService } from './db/scheduleService';
 import { studentService } from './db/studentService';
 import { teacherService } from './db/teacherService';
 import { classService } from './db/classService';
+import { evaluationService } from './db/evaluationService';
 
 // Re-export all services
 export {
@@ -12,5 +13,6 @@ export {
   scheduleService,
   studentService,
   teacherService,
-  classService
+  classService,
+  evaluationService
 };

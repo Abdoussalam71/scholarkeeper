@@ -48,7 +48,7 @@ export function ScheduleView({
     documentTitle: `Emploi du temps - ${selectedClass?.name || "Toutes les classes"}`,
     onPrintError: (error) => console.error('Print failed', error),
     onAfterPrint: () => console.log('Print completed'),
-    content: () => printRef.current,
+    contentRef: printRef,
   });
   
   const handleAddEvent = () => {

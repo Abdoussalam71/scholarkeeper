@@ -59,7 +59,7 @@ export const PaymentReport = () => {
     documentTitle: "Rapport des paiements impayés",
     onPrintError: (error) => console.error('Print failed', error),
     onAfterPrint: () => console.log('Print completed'),
-    content: () => printRef.current,
+    contentRef: printRef,
   });
   
   const handleDownloadCSV = () => {

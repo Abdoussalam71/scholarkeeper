@@ -5,6 +5,7 @@ import { StudentData } from '@/types/students';
 import { TeacherData } from '@/types/teachers';
 import { ScheduleEvent } from '@/types/schedule';
 import { Course, CourseMaterial, CourseSession } from '@/types/courses';
+import { Evaluation } from '@/types/evaluations';
 
 // Define a custom Dexie class with typed tables
 class SchoolDatabase extends Dexie {
@@ -21,6 +22,7 @@ class SchoolDatabase extends Dexie {
   courseSessions!: Dexie.Table<CourseSession, string>;
   courseMaterials!: Dexie.Table<CourseMaterial, string>;
   schoolInfo!: Dexie.Table<any, string>;
+  evaluations!: Dexie.Table<Evaluation, string>;
 
   constructor() {
     super('school_management_db');
@@ -37,7 +39,8 @@ class SchoolDatabase extends Dexie {
       courses: 'id, name, teacherId, className',
       courseSessions: 'id, courseId',
       courseMaterials: 'id, courseId',
-      schoolInfo: 'id'
+      schoolInfo: 'id',
+      evaluations: 'id, courseId, classId, date'
     });
   }
 }
