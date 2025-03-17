@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +68,7 @@ export const PaymentReport = () => {
   const handlePrint = useReactToPrint({
     documentTitle: "Rapport des paiements impayés",
     onPrintError: (error) => console.error('Print failed', error),
-    removeAfterPrint: true,
+    onAfterPrint: () => console.log('Print completed'),
     // Use a function that returns the ref's current value
     printableElement: () => printRef.current,
   });

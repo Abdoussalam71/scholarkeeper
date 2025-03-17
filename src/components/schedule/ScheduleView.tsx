@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Calendar, Clock, Plus, Pencil, Trash, Printer, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,18 +40,14 @@ export function ScheduleView({
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
-  // Add print reference
   const printRef = useRef<HTMLDivElement>(null);
   
-  // Get selected class before using it
   const selectedClass = classes.find(c => c.id === selectedClassId);
   
-  // Add print handler - Fixed: correctly implementing useReactToPrint
   const handlePrint = useReactToPrint({
     documentTitle: `Emploi du temps - ${selectedClass?.name || "Toutes les classes"}`,
     onPrintError: (error) => console.error('Print failed', error),
-    removeAfterPrint: true,
-    // Use a function that returns the ref's current value
+    onAfterPrint: () => console.log('Print completed'),
     printableElement: () => printRef.current,
   });
   
@@ -85,17 +80,12 @@ export function ScheduleView({
     }
   };
   
-  // Add CSV export functionality
   const handleExportCSV = () => {
-    // Skip if no class is selected
     if (!selectedClassId) {
       return;
     }
     
-    // Create headers
     const headers = ['Jour', 'Horaire début', 'Horaire fin', 'Cours', 'Enseignant', 'Salle'];
-    
-    // Create data rows
     const rows = schedules.map(event => [
       event.dayOfWeek,
       event.startTime,
@@ -105,13 +95,11 @@ export function ScheduleView({
       event.room
     ]);
     
-    // Assemble CSV content
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
     
-    // Create and trigger download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -123,7 +111,6 @@ export function ScheduleView({
     document.body.removeChild(link);
   };
   
-  // Organiser les événements par jour et heure pour faciliter l'affichage
   const eventsByDayAndTime: Record<string, Record<string, ScheduleEvent>> = {};
   
   schedules.forEach(event => {
@@ -131,7 +118,6 @@ export function ScheduleView({
       eventsByDayAndTime[event.dayOfWeek] = {};
     }
     
-    // Pour simplifier l'exemple, on considère qu'un seul événement peut exister à un moment donné
     const timeKey = `${event.startTime}-${event.endTime}`;
     eventsByDayAndTime[event.dayOfWeek][timeKey] = event;
   });
@@ -167,7 +153,6 @@ export function ScheduleView({
             </Select>
           </div>
           
-          {/* Fixed: handling print correctly with proper onClick handler */}
           {selectedClassId && (
             <>
               <Button 
@@ -205,7 +190,6 @@ export function ScheduleView({
           <div className="text-center py-8">Chargement...</div>
         ) : (
           <div className="overflow-x-auto" ref={printRef}>
-            {/* Add print-only header */}
             <div className="print:block hidden p-4">
               <h1 className="text-2xl font-bold text-center">
                 Emploi du temps - {selectedClass?.name || "Toutes les classes"}
@@ -305,7 +289,6 @@ export function ScheduleView({
         )}
       </CardContent>
       
-      {/* Dialogs */}
       <ScheduleEventDialog 
         open={eventDialogOpen}
         onOpenChange={setEventDialogOpen}
