@@ -119,11 +119,24 @@ export const EvaluationDialog = ({
   }, [open, evaluation, form]);
   
   const onSubmit = (data: z.infer<typeof evaluationSchema>) => {
-    onSave({
-      ...data,
-      date: format(data.date, 'yyyy-MM-dd')
-    });
+    const submissionData: Omit<Evaluation, "id"> = {
+      title: data.title,
+      courseId: data.courseId,
+      courseName: data.courseName,
+      teacherName: data.teacherName,
+      classId: data.classId,
+      className: data.className,
+      date: format(data.date, 'yyyy-MM-dd'),
+      startTime: data.startTime,
+      endTime: data.endTime,
+      room: data.room,
+      duration: data.duration,
+      totalPoints: data.totalPoints,
+      status: data.status,
+      notes: data.notes
+    };
     
+    onSave(submissionData);
     onOpenChange(false);
   };
   

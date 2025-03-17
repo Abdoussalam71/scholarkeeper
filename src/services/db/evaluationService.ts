@@ -12,7 +12,7 @@ export const evaluationService = {
       
       // Créer quelques évaluations d'exemple
       if (courses.length > 0 && classes.length > 0) {
-        const sampleEvaluations = courses.slice(0, 3).map((course, index) => {
+        const sampleEvaluations: Evaluation[] = courses.slice(0, 3).map((course, index) => {
           // Choisir une classe aléatoire pour l'évaluation
           const randomClass = classes[Math.floor(Math.random() * classes.length)];
           
@@ -35,7 +35,7 @@ export const evaluationService = {
             room: `Salle ${Math.floor(Math.random() * 10) + 100}`,
             duration: 90,
             totalPoints: 20,
-            status: "planned",
+            status: "planned" as "planned" | "completed" | "cancelled",
             notes: "Veuillez préparer les chapitres 1 à 3"
           };
         });
@@ -76,5 +76,10 @@ export const evaluationService = {
   deleteEvaluation: async (id: string): Promise<boolean> => {
     await db.evaluations.delete(id);
     return true;
+  },
+  
+  // Méthode pour nettoyer la base de données en supprimant toutes les évaluations
+  clearEvaluations: async (): Promise<void> => {
+    await db.evaluations.clear();
   }
 };
