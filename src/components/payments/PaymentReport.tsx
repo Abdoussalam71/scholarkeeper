@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,21 +16,16 @@ export const PaymentReport = () => {
   const [selectedClass, setSelectedClass] = useState<string | undefined>();
   const printRef = useRef<HTMLDivElement>(null);
   
-  // Calculer les étudiants avec des soldes restants
   const studentsWithBalances = students
     .map(student => {
-      // Récupérer tous les reçus de cet étudiant
       const studentReceipts = allReceipts.filter(r => r.studentId === student.id);
       
-      // Calculer le montant total payé
       const totalPaid = studentReceipts.reduce((sum, receipt) => 
         sum + (receipt.status === "payé" ? receipt.amount : 0), 0);
       
-      // Déterminer les frais de scolarité pour la classe de l'étudiant
       const classFee = classFees.find(fee => fee.className === student.class);
       const totalFees = classFee ? classFee.yearlyAmount : 0;
       
-      // Calculer le solde restant
       const remainingBalance = totalFees - totalPaid;
       
       return {
@@ -42,9 +36,8 @@ export const PaymentReport = () => {
         className: student.class || "Non assigné"
       };
     })
-    .filter(student => student.remainingBalance > 0); // Filtrer uniquement ceux qui ont un solde restant
+    .filter(student => student.remainingBalance > 0);
   
-  // Filtrer par terme de recherche et classe sélectionnée
   const filteredStudents = studentsWithBalances.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          student.className.toLowerCase().includes(searchTerm.toLowerCase());
@@ -54,31 +47,24 @@ export const PaymentReport = () => {
     return matchesSearch && matchesClass;
   });
   
-  // Récupérer la liste unique des classes pour le filtre
   const uniqueClasses = Array.from(
     new Set(studentsWithBalances.map(student => student.class))
   ).filter(Boolean);
   
-  // Formatter les montants en FCFA
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString('fr-FR') + ' FCFA';
   };
   
-  // Gérer l'impression - Fixed: correctly implementing useReactToPrint
   const handlePrint = useReactToPrint({
     documentTitle: "Rapport des paiements impayés",
     onPrintError: (error) => console.error('Print failed', error),
     onAfterPrint: () => console.log('Print completed'),
-    // Use a function that returns the ref's current value
-    printableElement: () => printRef.current,
+    content: () => printRef.current,
   });
   
-  // Gérer le téléchargement CSV
   const handleDownloadCSV = () => {
-    // Créer l'en-tête du CSV
     const headers = ['Nom', 'Classe', 'Frais totaux', 'Montant payé', 'Solde restant'];
     
-    // Créer les lignes de données
     const rows = filteredStudents.map(student => [
       student.name,
       student.className,
@@ -87,13 +73,11 @@ export const PaymentReport = () => {
       student.remainingBalance
     ]);
     
-    // Assembler le contenu CSV
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
     
-    // Créer un blob et un lien pour télécharger
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -150,7 +134,6 @@ export const PaymentReport = () => {
             </div>
           </div>
           
-          {/* Fixed: handling print correctly with proper onClick handler */}
           <Button 
             variant="outline" 
             onClick={() => handlePrint()}
