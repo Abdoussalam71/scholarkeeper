@@ -64,7 +64,7 @@ export const PaymentReport = () => {
     return amount.toLocaleString('fr-FR') + ' FCFA';
   };
   
-  // Gérer l'impression - FIXED: Properly implement useReactToPrint
+  // Gérer l'impression - Fixed: using useReactToPrint correctly
   const handlePrint = useReactToPrint({
     documentTitle: "Rapport des paiements impayés",
     content: () => printRef.current
@@ -147,7 +147,7 @@ export const PaymentReport = () => {
             </div>
           </div>
           
-          {/* FIXED: Fixed the onClick handler to correctly call handlePrint */}
+          {/* Fixed: handling print correctly */}
           <Button 
             variant="outline" 
             onClick={handlePrint}

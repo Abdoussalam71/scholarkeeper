@@ -44,6 +44,15 @@ export function ScheduleView({
   // Add print reference
   const printRef = useRef<HTMLDivElement>(null);
   
+  // Get selected class before using it
+  const selectedClass = classes.find(c => c.id === selectedClassId);
+  
+  // Add print handler - Fixed: using useReactToPrint correctly
+  const handlePrint = useReactToPrint({
+    documentTitle: `Emploi du temps - ${selectedClass?.name || "Toutes les classes"}`,
+    content: () => printRef.current
+  });
+  
   const handleAddEvent = () => {
     setSelectedEvent(null);
     setEventDialogOpen(true);
@@ -72,12 +81,6 @@ export function ScheduleView({
       onDeleteSchedule(selectedEvent.id);
     }
   };
-  
-  // Add print handler
-  const handlePrint = useReactToPrint({
-    documentTitle: `Emploi du temps - ${selectedClass?.name || "Toutes les classes"}`,
-    content: () => printRef.current
-  });
   
   // Add CSV export functionality
   const handleExportCSV = () => {
@@ -116,8 +119,6 @@ export function ScheduleView({
     link.click();
     document.body.removeChild(link);
   };
-  
-  const selectedClass = classes.find(c => c.id === selectedClassId);
   
   // Organiser les événements par jour et heure pour faciliter l'affichage
   const eventsByDayAndTime: Record<string, Record<string, ScheduleEvent>> = {};
@@ -163,7 +164,7 @@ export function ScheduleView({
             </Select>
           </div>
           
-          {/* Add print and export buttons */}
+          {/* Fixed: handling print correctly */}
           {selectedClassId && (
             <>
               <Button 
