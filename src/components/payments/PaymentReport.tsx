@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,10 +63,13 @@ export const PaymentReport = () => {
     return amount.toLocaleString('fr-FR') + ' FCFA';
   };
   
-  // Gérer l'impression - Fixed: using useReactToPrint correctly
+  // Gérer l'impression - Fixed: correctly implementing useReactToPrint
   const handlePrint = useReactToPrint({
     documentTitle: "Rapport des paiements impayés",
-    content: () => printRef.current
+    onPrintError: (error) => console.error('Print failed', error),
+    removeAfterPrint: true,
+    // Use a function that returns the ref's current value
+    printableElement: () => printRef.current,
   });
   
   // Gérer le téléchargement CSV
@@ -147,10 +149,10 @@ export const PaymentReport = () => {
             </div>
           </div>
           
-          {/* Fixed: handling print correctly */}
+          {/* Fixed: handling print correctly with proper onClick handler */}
           <Button 
             variant="outline" 
-            onClick={handlePrint}
+            onClick={() => handlePrint()}
           >
             <Printer className="mr-2 h-4 w-4" />
             Imprimer

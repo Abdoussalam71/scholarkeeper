@@ -47,10 +47,13 @@ export function ScheduleView({
   // Get selected class before using it
   const selectedClass = classes.find(c => c.id === selectedClassId);
   
-  // Add print handler - Fixed: using useReactToPrint correctly
+  // Add print handler - Fixed: correctly implementing useReactToPrint
   const handlePrint = useReactToPrint({
     documentTitle: `Emploi du temps - ${selectedClass?.name || "Toutes les classes"}`,
-    content: () => printRef.current
+    onPrintError: (error) => console.error('Print failed', error),
+    removeAfterPrint: true,
+    // Use a function that returns the ref's current value
+    printableElement: () => printRef.current,
   });
   
   const handleAddEvent = () => {
@@ -164,13 +167,13 @@ export function ScheduleView({
             </Select>
           </div>
           
-          {/* Fixed: handling print correctly */}
+          {/* Fixed: handling print correctly with proper onClick handler */}
           {selectedClassId && (
             <>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={handlePrint}
+                onClick={() => handlePrint()}
                 className="flex items-center gap-1"
               >
                 <Printer className="h-4 w-4" /> Imprimer
