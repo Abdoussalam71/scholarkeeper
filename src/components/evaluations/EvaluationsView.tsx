@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Calendar, ClipboardList, Plus, Pencil, Trash, Printer, Download, Filter, Search, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,18 +125,16 @@ export function EvaluationsView({
       evaluation.teacherName.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter 
-      ? evaluation.status === statusFilter 
+      ? (statusFilter === "all" ? true : evaluation.status === statusFilter)
       : true;
     
     return matchesSearch && matchesStatus;
   });
   
-  // Trier par date (les plus proches d'abord)
   const sortedEvaluations = [...filteredEvaluations].sort((a, b) => {
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
   
-  // Fonction pour afficher le libellé du statut
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'planned': return 'Planifiée';
@@ -147,7 +144,6 @@ export function EvaluationsView({
     }
   };
   
-  // Fonction pour obtenir la couleur du badge selon le statut
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'planned': return 'bg-blue-100 text-blue-800';
@@ -195,7 +191,7 @@ export function EvaluationsView({
                 <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les statuts</SelectItem>
+                <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="planned">Planifiées</SelectItem>
                 <SelectItem value="completed">Terminées</SelectItem>
                 <SelectItem value="cancelled">Annulées</SelectItem>

@@ -23,7 +23,8 @@ import {
   Settings,
   LayoutDashboard, 
   HelpCircle,
-  LogOut
+  LogOut,
+  ClipboardList
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -57,6 +58,11 @@ const navigationItems = [
     title: "Emploi du temps",
     icon: Calendar,
     url: "/schedule",
+  },
+  {
+    title: "Évaluations",
+    icon: ClipboardList,
+    url: "/evaluations",
   },
   {
     title: "Paiements",
