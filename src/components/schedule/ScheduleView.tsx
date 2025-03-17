@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Calendar, Clock, Plus, Pencil, Trash } from "lucide-react";
+import { useState, useRef } from "react";
+import { Calendar, Clock, Plus, Pencil, Trash, Printer, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { ClassData } from "@/types/classes";
 import { ScheduleEventDialog } from "./ScheduleEventDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useReactToPrint } from "react-to-print";
 
 const DAYS_OF_WEEK = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 const TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00"];
@@ -40,6 +41,8 @@ export function ScheduleView({
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  // Add print reference
+  const printRef = useRef<HTMLDivElement>(null);
   
   const handleAddEvent = () => {
     setSelectedEvent(null);
@@ -68,6 +71,50 @@ export function ScheduleView({
     if (selectedEvent) {
       onDeleteSchedule(selectedEvent.id);
     }
+  };
+  
+  // Add print handler
+  const handlePrint = useReactToPrint({
+    documentTitle: `Emploi du temps - ${selectedClass?.name || "Toutes les classes"}`,
+    content: () => printRef.current
+  });
+  
+  // Add CSV export functionality
+  const handleExportCSV = () => {
+    // Skip if no class is selected
+    if (!selectedClassId) {
+      return;
+    }
+    
+    // Create headers
+    const headers = ['Jour', 'Horaire début', 'Horaire fin', 'Cours', 'Enseignant', 'Salle'];
+    
+    // Create data rows
+    const rows = schedules.map(event => [
+      event.dayOfWeek,
+      event.startTime,
+      event.endTime,
+      event.courseName,
+      event.teacherName,
+      event.room
+    ]);
+    
+    // Assemble CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `emploi_du_temps_${selectedClass?.name || 'classe'}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
   
   const selectedClass = classes.find(c => c.id === selectedClassId);
@@ -115,6 +162,30 @@ export function ScheduleView({
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Add print and export buttons */}
+          {selectedClassId && (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handlePrint}
+                className="flex items-center gap-1"
+              >
+                <Printer className="h-4 w-4" /> Imprimer
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleExportCSV}
+                className="flex items-center gap-1"
+              >
+                <Download className="h-4 w-4" /> Exporter CSV
+              </Button>
+            </>
+          )}
+          
           <Button 
             variant="outline" 
             size="sm" 
@@ -129,7 +200,17 @@ export function ScheduleView({
         {isLoading ? (
           <div className="text-center py-8">Chargement...</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" ref={printRef}>
+            {/* Add print-only header */}
+            <div className="print:block hidden p-4">
+              <h1 className="text-2xl font-bold text-center">
+                Emploi du temps - {selectedClass?.name || "Toutes les classes"}
+              </h1>
+              <p className="text-center text-muted-foreground">
+                Date d'impression: {new Date().toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+            
             <Table>
               <TableHeader>
                 <TableRow>
@@ -158,7 +239,7 @@ export function ScheduleView({
                                 <div className="text-sm">{event.teacherName}</div>
                                 <div className="text-xs text-muted-foreground">{event.room}</div>
                                 
-                                <div className="absolute right-1 top-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute right-1 top-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -199,7 +280,7 @@ export function ScheduleView({
                             ) : selectedClassId ? (
                               <Button 
                                 variant="ghost" 
-                                className="h-full w-full justify-start items-start p-1 hover:bg-primary/5"
+                                className="h-full w-full justify-start items-start p-1 hover:bg-primary/5 print:hidden"
                                 onClick={() => {
                                   setSelectedEvent(null);
                                   setEventDialogOpen(true);

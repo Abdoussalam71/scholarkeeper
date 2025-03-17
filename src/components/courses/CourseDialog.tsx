@@ -67,11 +67,12 @@ export const CourseDialog = ({ open, onOpenChange, course, onSave, title }: Cour
       teacherName,
       classId: course?.classId || "",
       className: course?.className || "",
-      schedule: course?.schedule || "",
-      duration: course?.duration || "",
-      maxStudents: course?.maxStudents || 30,
-      currentStudents: course?.currentStudents || 0,
-      academicYear: course?.academicYear || defaultAcademicYear,
+      // Fournir des valeurs par défaut pour les champs qui seront remplis dans l'emploi du temps
+      schedule: "",  // Sera défini dans l'emploi du temps
+      duration: "",  // Sera défini dans l'emploi du temps
+      maxStudents: 30,
+      currentStudents: 0,
+      academicYear: defaultAcademicYear,
       status
     });
     

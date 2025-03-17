@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Printer, Search, X } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
-import { PaymentReceipt } from "@/types/fees";
 import { useStudentsData } from "@/hooks/useStudentsData";
 import { useFeesData } from "@/hooks/useFeesData";
 
@@ -65,10 +64,10 @@ export const PaymentReport = () => {
     return amount.toLocaleString('fr-FR') + ' FCFA';
   };
   
-  // Gérer l'impression
+  // Gérer l'impression - FIXED: Properly implement useReactToPrint
   const handlePrint = useReactToPrint({
-    documentTitle: "Rapport des paiements impayés"
-    // On supprime la propriété content qui n'est pas reconnue dans le type UseReactToPrintOptions
+    documentTitle: "Rapport des paiements impayés",
+    content: () => printRef.current
   });
   
   // Gérer le téléchargement CSV
@@ -136,7 +135,6 @@ export const PaymentReport = () => {
                 <SelectContent>
                   <SelectItem value="all">Toutes les classes</SelectItem>
                   {uniqueClasses.map(classItem => {
-                    // Using student.class directly since we've updated the mapping
                     const className = students.find(s => s.class === classItem)?.class || "Non assigné";
                     return (
                       <SelectItem key={classItem} value={classItem}>
@@ -149,13 +147,10 @@ export const PaymentReport = () => {
             </div>
           </div>
           
+          {/* FIXED: Fixed the onClick handler to correctly call handlePrint */}
           <Button 
             variant="outline" 
-            onClick={() => {
-              if (printRef.current) {
-                handlePrint(printRef.current);
-              }
-            }}
+            onClick={handlePrint}
           >
             <Printer className="mr-2 h-4 w-4" />
             Imprimer
