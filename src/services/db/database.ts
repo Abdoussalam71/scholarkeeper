@@ -2,16 +2,25 @@
 import Dexie, { Table } from 'dexie';
 import { StudentData } from '@/types/students';
 import { TeacherData } from '@/types/teachers';
-import { CourseData } from '@/types/courses';
+import { Course } from '@/types/courses';
 import { ClassData } from '@/types/classes';
 import { ScheduleEvent } from '@/types/schedule';
-import { PaymentData } from '@/types/payments';
 import { Evaluation } from '@/types/evaluations';
+
+// Définition du type PaymentData car il n'existe pas encore
+interface PaymentData {
+  id: string;
+  studentId: string;
+  amount: number;
+  paymentDate: string;
+  paymentType: string;
+  description: string;
+}
 
 class SchoolDatabase extends Dexie {
   students!: Table<StudentData, string>;
   teachers!: Table<TeacherData, string>;
-  courses!: Table<CourseData, string>;
+  courses!: Table<Course, string>;
   classes!: Table<ClassData, string>;
   scheduleEvents!: Table<ScheduleEvent, string>;
   payments!: Table<PaymentData, string>;

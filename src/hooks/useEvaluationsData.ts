@@ -8,11 +8,16 @@ export function useEvaluationsData(classId?: string, courseId?: string) {
   const queryClient = useQueryClient();
   
   // Initialize the database on first load
-  useQuery({
+  const initQuery = useQuery({
     queryKey: ["evaluationsInit"],
     queryFn: async () => {
-      await evaluationService.initEvaluations();
-      return true;
+      try {
+        const result = await evaluationService.initEvaluations();
+        return result;
+      } catch (error) {
+        console.error("Erreur d'initialisation des évaluations:", error);
+        return false;
+      }
     },
     staleTime: Infinity
   });
@@ -21,13 +26,19 @@ export function useEvaluationsData(classId?: string, courseId?: string) {
   const { data: evaluations = [], isLoading, error } = useQuery({
     queryKey: ["evaluations", classId, courseId],
     queryFn: async () => {
-      if (classId) {
-        return evaluationService.getEvaluationsByClassId(classId);
-      } else if (courseId) {
-        return evaluationService.getEvaluationsByCourseId(courseId);
+      try {
+        if (classId) {
+          return await evaluationService.getEvaluationsByClassId(classId);
+        } else if (courseId) {
+          return await evaluationService.getEvaluationsByCourseId(courseId);
+        }
+        return await evaluationService.getAllEvaluations();
+      } catch (error) {
+        console.error("Erreur lors de la récupération des évaluations:", error);
+        return [];
       }
-      return evaluationService.getAllEvaluations();
-    }
+    },
+    enabled: !initQuery.isLoading
   });
   
   // Add a new evaluation
@@ -74,7 +85,7 @@ export function useEvaluationsData(classId?: string, courseId?: string) {
   
   return {
     evaluations,
-    isLoading,
+    isLoading: isLoading || initQuery.isLoading,
     error,
     addEvaluation: (evaluation: Omit<Evaluation, "id">) => 
       addEvaluationMutation.mutate(evaluation),

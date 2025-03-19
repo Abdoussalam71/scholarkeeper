@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ const evaluationSchema = z.object({
   notes: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof evaluationSchema>;
+
 interface EvaluationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -59,7 +62,7 @@ export const EvaluationDialog = ({
 }: EvaluationDialogProps) => {
   const isEditing = !!evaluation;
   
-  const form = useForm<z.infer<typeof evaluationSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(evaluationSchema),
     defaultValues: {
       title: evaluation?.title || "",
@@ -80,44 +83,46 @@ export const EvaluationDialog = ({
   });
   
   useEffect(() => {
-    if (open && evaluation) {
-      form.reset({
-        title: evaluation.title,
-        courseId: evaluation.courseId,
-        courseName: evaluation.courseName,
-        teacherName: evaluation.teacherName,
-        classId: evaluation.classId,
-        className: evaluation.className,
-        date: new Date(evaluation.date),
-        startTime: evaluation.startTime,
-        endTime: evaluation.endTime,
-        room: evaluation.room,
-        duration: evaluation.duration,
-        totalPoints: evaluation.totalPoints,
-        status: evaluation.status,
-        notes: evaluation.notes || "",
-      });
-    } else if (open) {
-      form.reset({
-        title: "",
-        courseId: "",
-        courseName: "",
-        teacherName: "",
-        classId: "",
-        className: "",
-        date: new Date(),
-        startTime: "09:00",
-        endTime: "10:30",
-        room: "",
-        duration: 90,
-        totalPoints: 20,
-        status: "planned",
-        notes: "",
-      });
+    if (open) {
+      if (evaluation) {
+        form.reset({
+          title: evaluation.title,
+          courseId: evaluation.courseId,
+          courseName: evaluation.courseName,
+          teacherName: evaluation.teacherName,
+          classId: evaluation.classId,
+          className: evaluation.className,
+          date: new Date(evaluation.date),
+          startTime: evaluation.startTime,
+          endTime: evaluation.endTime,
+          room: evaluation.room,
+          duration: evaluation.duration,
+          totalPoints: evaluation.totalPoints,
+          status: evaluation.status,
+          notes: evaluation.notes || "",
+        });
+      } else {
+        form.reset({
+          title: "",
+          courseId: "",
+          courseName: "",
+          teacherName: "",
+          classId: "",
+          className: "",
+          date: new Date(),
+          startTime: "09:00",
+          endTime: "10:30",
+          room: "",
+          duration: 90,
+          totalPoints: 20,
+          status: "planned",
+          notes: "",
+        });
+      }
     }
   }, [open, evaluation, form]);
   
-  const onSubmit = (data: z.infer<typeof evaluationSchema>) => {
+  const onSubmit = (data: FormValues) => {
     const submissionData: Omit<Evaluation, "id"> = {
       title: data.title,
       courseId: data.courseId,
@@ -423,4 +428,3 @@ export const EvaluationDialog = ({
     </Dialog>
   );
 };
-
