@@ -12,7 +12,6 @@ import ClassesPage from "./pages/Classes";
 import SchedulePage from "./pages/Schedule";
 import PaymentsPage from "./pages/Payments";
 import SettingsPage from "./pages/Settings";
-import EvaluationsPage from "./pages/Evaluations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,7 +30,6 @@ const App = () => (
           <Route path="/classes" element={<ClassesPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/payments" element={<PaymentsPage />} />
-          <Route path="/evaluations" element={<EvaluationsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
