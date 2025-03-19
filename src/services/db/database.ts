@@ -1,46 +1,32 @@
 
-import Dexie from 'dexie';
-import { ClassData } from '@/types/classes';
+import Dexie, { Table } from 'dexie';
 import { StudentData } from '@/types/students';
 import { TeacherData } from '@/types/teachers';
+import { CourseData } from '@/types/courses';
+import { ClassData } from '@/types/classes';
 import { ScheduleEvent } from '@/types/schedule';
-import { Course, CourseMaterial, CourseSession } from '@/types/courses';
+import { PaymentData } from '@/types/payments';
 import { Evaluation } from '@/types/evaluations';
 
-// Define a custom Dexie class with typed tables
 class SchoolDatabase extends Dexie {
-  teachers!: Dexie.Table<TeacherData, string>;
-  classes!: Dexie.Table<ClassData, string>;
-  students!: Dexie.Table<StudentData, string>;
-  subjects!: Dexie.Table<any, string>;
-  scheduleEvents!: Dexie.Table<ScheduleEvent, string>;
-  schedules!: Dexie.Table<ScheduleEvent, string>;
-  paymentPlans!: Dexie.Table<any, string>;
-  classFees!: Dexie.Table<any, string>;
-  receipts!: Dexie.Table<any, string>;
-  courses!: Dexie.Table<Course, string>;
-  courseSessions!: Dexie.Table<CourseSession, string>;
-  courseMaterials!: Dexie.Table<CourseMaterial, string>;
-  schoolInfo!: Dexie.Table<any, string>;
-  evaluations!: Dexie.Table<Evaluation, string>;
+  students!: Table<StudentData, string>;
+  teachers!: Table<TeacherData, string>;
+  courses!: Table<CourseData, string>;
+  classes!: Table<ClassData, string>;
+  scheduleEvents!: Table<ScheduleEvent, string>;
+  payments!: Table<PaymentData, string>;
+  evaluations!: Table<Evaluation, string>;
 
   constructor() {
-    super('school_management_db');
-    this.version(1).stores({
-      teachers: 'id, name, email',
-      classes: 'id, name',
-      students: 'id, name, class',
-      subjects: 'id, name',
-      scheduleEvents: 'id, title, start, end',
-      schedules: 'id, courseId, classId',
-      paymentPlans: 'id, name',
-      classFees: 'id, classId, className',
-      receipts: 'id, studentId, receiptNumber, transactionId',
-      courses: 'id, name, teacherId, className',
-      courseSessions: 'id, courseId',
-      courseMaterials: 'id, courseId',
-      schoolInfo: 'id',
-      evaluations: 'id, courseId, classId, date'
+    super('schoolDatabase');
+    this.version(6).stores({
+      students: 'id, name, email, phone, address, status',
+      teachers: 'id, name, email, phone, address, status',
+      courses: 'id, name, description, teacherId',
+      classes: 'id, name, level, academicYear',
+      scheduleEvents: 'id, courseId, classId, day, startTime, endTime',
+      payments: 'id, studentId, amount, paymentDate, paymentType, description',
+      evaluations: 'id, title, courseId, classId, date, startTime, endTime'
     });
   }
 }

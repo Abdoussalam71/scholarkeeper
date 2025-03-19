@@ -35,7 +35,7 @@ export const evaluationService = {
             room: `Salle ${Math.floor(Math.random() * 10) + 100}`,
             duration: 90,
             totalPoints: 20,
-            status: "planned" as "planned" | "completed" | "cancelled",
+            status: "planned" as const,
             notes: "Veuillez préparer les chapitres 1 à 3"
           };
         });

@@ -9,9 +9,9 @@ import { useQuery } from "@tanstack/react-query";
 import { courseService } from "@/services/database";
 
 const EvaluationsPage = () => {
-  const [selectedClassId, setSelectedClassId] = useState<string | undefined>(undefined);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const { classes } = useClassesData();
-  const { evaluations, isLoading, addEvaluation, updateEvaluation, deleteEvaluation } = useEvaluationsData(selectedClassId);
+  const { evaluations, isLoading, addEvaluation, updateEvaluation, deleteEvaluation } = useEvaluationsData(selectedClassId || undefined);
   
   // Récupérer les cours pour le sélecteur
   const { data: courses = [] } = useQuery({
@@ -42,7 +42,7 @@ const EvaluationsPage = () => {
               classes={classes}
               courses={coursesData}
               isLoading={isLoading}
-              selectedClassId={selectedClassId}
+              selectedClassId={selectedClassId || undefined}
               onClassChange={setSelectedClassId}
               onAddEvaluation={addEvaluation}
               onUpdateEvaluation={updateEvaluation}

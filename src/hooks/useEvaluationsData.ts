@@ -38,7 +38,8 @@ export function useEvaluationsData(classId?: string, courseId?: string) {
       toast.success("Évaluation ajoutée avec succès");
       queryClient.invalidateQueries({ queryKey: ["evaluations"] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erreur lors de l'ajout:", error);
       toast.error("Erreur lors de l'ajout de l'évaluation");
     }
   });
@@ -51,7 +52,8 @@ export function useEvaluationsData(classId?: string, courseId?: string) {
       toast.success("Évaluation mise à jour");
       queryClient.invalidateQueries({ queryKey: ["evaluations"] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erreur lors de la mise à jour:", error);
       toast.error("Erreur lors de la mise à jour");
     }
   });
@@ -64,7 +66,8 @@ export function useEvaluationsData(classId?: string, courseId?: string) {
       toast.success("Évaluation supprimée");
       queryClient.invalidateQueries({ queryKey: ["evaluations"] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erreur lors de la suppression:", error);
       toast.error("Erreur lors de la suppression");
     }
   });

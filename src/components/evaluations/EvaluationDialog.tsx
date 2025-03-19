@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -191,6 +190,7 @@ export const EvaluationDialog = ({
                         handleCourseChange(value);
                       }} 
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -222,6 +222,7 @@ export const EvaluationDialog = ({
                         handleClassChange(value);
                       }} 
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -301,7 +302,7 @@ export const EvaluationDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Heure de début</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Début" />
@@ -324,7 +325,7 @@ export const EvaluationDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Heure de fin</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Fin" />
@@ -378,7 +379,7 @@ export const EvaluationDialog = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Statut</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Statut" />
@@ -422,3 +423,4 @@ export const EvaluationDialog = ({
     </Dialog>
   );
 };
+
